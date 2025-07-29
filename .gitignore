@@ -1,0 +1,52 @@
+# Virtual Environment
+venv/
+env/
+.env
+.venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data and Logs
+*.log
+data/temp/
+logs/
+*.sqlite
+
+# Mission Critical Data (keep in secure repos)
+data/classified/
+data/mission_critical/
+keys/
+certificates/
+
+# Build artifacts
+*.o
+*.exe
+*.dll
+target/
+bin/
+obj/
+
+# Node.js
+node_modules/
+npm-debug.log*
+
+# Docker
+.dockerignore
