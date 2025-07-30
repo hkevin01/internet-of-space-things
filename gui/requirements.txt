@@ -1,0 +1,58 @@
+# PyQt6 GUI Requirements - Enhanced Version
+# Internet of Space Things (IoST) GUI Dependencies
+
+# Core PyQt6 framework
+PyQt6>=6.5.0
+PyQt6-Qt6>=6.5.0
+
+# 3D Visualization Support
+PyOpenGL>=3.1.7
+PyOpenGL-accelerate>=3.1.7
+
+# Data Processing and Analysis
+numpy>=1.24.0
+matplotlib>=3.7.0
+scipy>=1.10.0
+pandas>=2.0.0
+
+# Real-time Plotting and Visualization
+pyqtgraph>=0.13.0
+plotly>=5.14.0
+
+# Database Support (SQLite is built-in)
+# No additional packages needed for SQLite
+
+# Statistical Analysis (statistics module is built-in)
+# No additional packages needed
+
+# System Monitoring
+psutil>=5.9.0
+
+# Configuration Management
+PyYAML>=6.0.0
+
+# Network Communication
+requests>=2.31.0
+websockets>=11.0.0
+
+# Development Tools (Optional)
+pyqt6-tools>=6.5.0
+pytest>=7.0.0
+pytest-qt>=4.2.0
+
+# Icon Support
+qtawesome>=1.2.0
+
+# Logging and Monitoring
+structlog>=23.0.0
+
+# Additional Scientific Computing
+dash>=2.10.0
+dash-plotly>=5.14.0
+
+# Documentation (Optional)
+sphinx>=6.0.0
+sphinx-rtd-theme>=1.2.0
+
+# Note: Core functionality requires only PyQt6
+# Other packages provide enhanced features and can be installed as needed
