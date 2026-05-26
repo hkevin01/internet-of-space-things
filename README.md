@@ -17,6 +17,40 @@
 
 ---
 
+## ⚠️ Why This Project Exists - and Why It Cannot Be Ignored
+
+Space is no longer the exclusive domain of government superpowers with unlimited budgets and decades of lead time. As of 2026, over **10,000 active satellites** orbit Earth, with Starlink alone operating more than 6,000. SpaceX, Blue Origin, Rocket Lab, and dozens of smaller companies are launching new constellations every quarter. NASA's Artemis program is building permanent infrastructure at the Moon. Mars missions are being planned with 3-7 year crew transit times. The number of connected devices in orbit - satellites, CubeSats, space stations, lunar landers, interplanetary probes - is growing exponentially.
+
+**This explosion of space hardware is happening faster than the software and security standards needed to manage it safely.** Most satellites today still run proprietary, closed protocols designed in the 1980s and 1990s - before cybersecurity was a mainstream engineering concern, before machine learning existed as a practical tool, and before anyone imagined that a $10,000 CubeSat built by a university student would share orbital infrastructure with a crewed space station.
+
+> [!WARNING]
+> **The Viasat KA-SAT attack (February 24, 2022)** is the most stark recent example of what happens when space communication infrastructure is not adequately secured. Within the first hour of Russia's invasion of Ukraine, a nation-state cyberattack wiped the firmware of tens of thousands of SATCOM modems across Europe using a single malicious command. Ukrainian military communications were severed. Wind turbines in Germany lost remote monitoring. Emergency services in multiple countries lost backup communications. All of this damage was done before a single ground troop crossed a border - and it happened because the satellite network lacked authentication, anomaly detection, and intrusion response capabilities that have been standard in terrestrial IT since the early 2000s.
+
+### What Happens If IoST Is Not Considered
+
+The consequences of ignoring the Internet of Space Things as a serious engineering discipline are not abstract - they are immediate, measurable, and in some scenarios, lethal.
+
+**1. Crew Safety Failure.** A crewed Mars transit mission lasts 7-9 months in each direction, during which the crew is completely unreachable for real-time ground support during the 4-24 minute signal delay windows. Without autonomous onboard monitoring, predictive maintenance, and self-healing systems, a single undetected component failure - a leaking CO₂ scrubber, a degrading battery, a radiation-damaged computer - can cascade into a life-threatening emergency before ground controllers even receive the first alert. The Apollo 13 oxygen tank failure in 1970 nearly cost three lives in a mission where Earth was only 1.3 light-seconds away. Mars does not offer that luxury.
+
+**2. Mission Loss.** NASA's Mars Climate Orbiter was lost in 1999 due to a unit conversion error that went undetected across multiple software systems. The Mars Polar Lander was lost the same year due to a sensor misread that was never flagged as anomalous. Both spacecraft represented hundreds of millions of dollars and years of scientific preparation. Modern missions are more complex by orders of magnitude - without intelligent sensor fusion and anomaly detection, the probability of an undetected software or hardware failure destroying a mission is not theoretical; it is historical fact.
+
+**3. Orbital Cascades and Kessler Syndrome.** An unsecured satellite that can be commanded to execute unplanned maneuvers - by an attacker, by a software bug, or by a corrupted uplink - becomes a collision hazard for every other object in its orbital shell. The Iridium 33 / Cosmos 2251 collision in 2009 generated over 2,000 trackable debris fragments, each of which poses a hypervelocity impact risk to every satellite and crewed vehicle in low Earth orbit. A coordinated attack on a large constellation that disabled collision-avoidance systems could trigger a debris cascade that makes entire orbital bands unusable for decades - the Kessler Syndrome scenario that would cripple GPS, weather forecasting, financial transaction networks, and global internet connectivity simultaneously.
+
+**4. Data Integrity and Scientific Trust.** Space missions generate irreplaceable scientific data - climate measurements, astronomical observations, geological surveys of other worlds. If telemetry pipelines lack authentication and integrity verification, an adversary can inject false sensor readings that corrupt scientific conclusions. Imagine climate models built on spoofed atmospheric data from a compromised satellite network, or navigation charts for future Moon landings derived from falsified orbital measurements. The downstream consequences of bad data presented as authoritative scientific fact are nearly impossible to unwind once they propagate through the research community.
+
+**5. National Security and Economic Dependence.** Modern economies are satellite-dependent in ways that were not true even ten years ago. Precision agriculture uses GPS timing. Financial markets use satellite clock synchronization for trade settlement. Emergency response systems use satellite communications as backup when terrestrial infrastructure fails during disasters. A coordinated attack on satellite infrastructure - enabled by the absence of proper access control, encryption, and intrusion detection - is now categorized by the U.S. Cybersecurity and Infrastructure Security Agency (CISA) as a critical infrastructure threat on par with attacks on the power grid.
+
+> [!CAUTION]
+> **Space cyber threats are not hypothetical future risks - they are active, ongoing, and escalating.** The U.S. Space Force's Space Information Sharing and Analysis Center (Space ISAC) reported a 300% increase in cyber incidents targeting space systems between 2020 and 2024. China's PLA Strategic Support Force has dedicated space cyber units. Russia demonstrated direct-ascent anti-satellite weapons in 2021. Iran and North Korea have both attempted to infiltrate commercial satellite operators. Any space system designed without security as a core requirement - not an afterthought - is a liability to every other system that depends on the shared orbital environment.
+
+### Why IoST Addresses These Risks
+
+The IoST platform was designed from the ground up to treat these risks as first-class engineering requirements, not nice-to-have features. Every layer of the architecture - from the cryptographic command authentication on the satellite, to the intrusion detection system monitoring RF signal anomalies, to the hash-chained audit log that cannot be tampered with post-incident - exists because a real mission scenario requires it. The predictive maintenance engine exists because equipment failure in deep space is not a recoverable situation. The federated machine learning exists because waiting for a ground-based model update during a 24-minute signal delay is not an acceptable operational posture. The software-defined network exists because static routing tables that cannot respond to link failures autonomously are dangerous.
+
+**Building space systems without these capabilities is not a cost-saving decision - it is a decision to accept a known risk that has already killed missions, endangered crews, and disrupted critical infrastructure on Earth.** IoST is the answer to the question: what does a space network look like when it is built with the same rigor we expect from medical devices, nuclear control systems, and aviation software?
+
+---
+
 ## 🌟 Overview
 
 The Internet of Space Things (IoST) is a research-grade, production-capable platform that brings Internet of Things (IoT) design principles into the domain of space exploration and human spaceflight operations. Where terrestrial IoT connects billions of everyday devices across cities and homes, the IoST connects satellites, CubeSat constellations, sensor arrays, astronaut equipment, and ground stations into one unified, intelligent network.
@@ -826,6 +860,77 @@ success = await controller.create_network_slice({
 | <sub>Emergency</sub> | <sub>Distress beacons, mayday</sub> | <sub>< 10ms</sub> | <sub>5 Mbps</sub> | <sub>Critical (0)</sub> |
 
 </details>
+
+---
+
+## 🔐 Security Architecture
+
+Space systems face a uniquely hostile threat environment. Unlike a corporate server room that can be physically secured and monitored in real time, a satellite 550km above Earth is physically unreachable for repairs, transmits and receives over radio frequencies that any sufficiently equipped adversary can intercept or jam, and must operate autonomously for months without human oversight. These constraints make security not just important but existentially critical - a compromised satellite cannot be patched by plugging in a USB drive.
+
+IoST implements a defense-in-depth security architecture with four independent layers, each of which must be defeated separately for an attacker to succeed. The cryptographic layer protects data confidentiality and command authenticity. The access control layer enforces least-privilege operator authority. The intrusion detection layer monitors for anomalous behavior in real time. The audit layer ensures that even if a breach occurs, a tamper-evident record exists for post-incident analysis.
+
+> [!WARNING]
+> The 2022 Viasat KA-SAT attack wiped tens of thousands of satellite modems with a single unauthenticated command, disrupting military communications across Ukraine and civilian infrastructure across Europe. IoST's command authentication layer - ECDSA-signed commands with sequence-number replay protection - directly addresses this attack vector.
+
+### Security Layer Overview
+
+| <sub>#</sub> | <sub>Layer</sub> | <sub>Module</sub> | <sub>Threat Mitigated</sub> | <sub>Standard</sub> |
+|---|---|---|---|---|
+| <sub>1</sub> | <sub>**Symmetric Encryption**</sub> | <sub>`space_grade_crypto.py`</sub> | <sub>Eavesdropping on telemetry downlinks and command uplinks</sub> | <sub>AES-256-GCM (NIST SP 800-38D)</sub> |
+| <sub>2</sub> | <sub>**Command Authentication**</sub> | <sub>`space_grade_crypto.py`</sub> | <sub>Unauthorized command injection (Viasat-style attacks)</sub> | <sub>ECDSA P-384 (FIPS 186-5)</sub> |
+| <sub>3</sub> | <sub>**Quantum-Resistant Encryption**</sub> | <sub>`quantum_encryption.py`</sub> | <sub>"Harvest now, decrypt later" attacks on 30-year mission data</sub> | <sub>CRYSTALS-Kyber-768 hybrid (NIST FIPS 203)</sub> |
+| <sub>4</sub> | <sub>**Replay Attack Prevention**</sub> | <sub>`space_grade_crypto.py`</sub> | <sub>Recorded command retransmission by adversaries</sub> | <sub>Sequence counter + 5-minute staleness window</sub> |
+| <sub>5</sub> | <sub>**Role-Based Access Control**</sub> | <sub>`access_control.py`</sub> | <sub>Insider threats, credential compromise, privilege escalation</sub> | <sub>NIST SP 800-192 RBAC</sub> |
+| <sub>6</sub> | <sub>**Brute-Force Protection**</sub> | <sub>`access_control.py`</sub> | <sub>Credential stuffing attacks on ground station APIs</sub> | <sub>5-attempt lockout, 15-minute cooldown</sub> |
+| <sub>7</sub> | <sub>**RF Signal Anomaly Detection**</sub> | <sub>`intrusion_detection.py`</sub> | <sub>GPS/GNSS spoofing, command link jamming, signal injection</sub> | <sub>Statistical baseline (5-sigma rule)</sub> |
+| <sub>8</sub> | <sub>**Behavioral IDS**</sub> | <sub>`intrusion_detection.py`</sub> | <sub>Zero-day command injection, denial-of-service, insider abuse</sub> | <sub>MITRE ATT&CK for Space</sub> |
+| <sub>9</sub> | <sub>**Tamper-Evident Audit Log**</sub> | <sub>`audit_logger.py`</sub> | <sub>Post-incident log tampering to cover attack tracks</sub> | <sub>SHA-256 hash-chaining (NIST SP 800-92)</sub> |
+| <sub>10</sub> | <sub>**Session Key Derivation**</sub> | <sub>`space_grade_crypto.py`</sub> | <sub>Long-term key compromise exposing historical sessions</sub> | <sub>HKDF-SHA-384 per-session forward secrecy</sub> |
+
+### Operator Role Hierarchy
+
+IoST enforces a strict role hierarchy based on the principle of least privilege. A researcher studying radiation data has no business sending propulsion commands. A crew medic monitoring biometrics should not be able to reconfigure network slices. Each role grants only the minimum permissions required for the job, and tokens expire after 1 hour to limit the blast radius of credential theft.
+
+| <sub>Role</sub> | <sub>Can Read Telemetry</sub> | <sub>Can Send Commands</sub> | <sub>Can Execute Maneuvers</sub> | <sub>Can Manage Security</sub> |
+|---|---|---|---|---|
+| <sub>Observer</sub> | <sub>✅ Yes</sub> | <sub>❌ No</sub> | <sub>❌ No</sub> | <sub>❌ No</sub> |
+| <sub>Researcher</sub> | <sub>✅ Yes</sub> | <sub>⚠️ Payload only</sub> | <sub>❌ No</sub> | <sub>❌ No</sub> |
+| <sub>Crew Operator</sub> | <sub>✅ Yes</sub> | <sub>✅ Routine + Emergency</sub> | <sub>❌ No</sub> | <sub>❌ No</sub> |
+| <sub>Flight Controller</sub> | <sub>✅ Yes</sub> | <sub>✅ All commands</sub> | <sub>✅ Yes</sub> | <sub>⚠️ View only</sub> |
+| <sub>Mission Director</sub> | <sub>✅ Yes</sub> | <sub>✅ All commands</sub> | <sub>✅ Yes</sub> | <sub>⚠️ View only</sub> |
+| <sub>System Admin</sub> | <sub>✅ Yes</sub> | <sub>✅ All commands</sub> | <sub>✅ Yes</sub> | <sub>✅ Full control</sub> |
+
+> [!NOTE]
+> Two-factor authentication (TOTP) is supported for all operator accounts via the `mfa_secret` field on `UserAccount`. For Flight Controller and above roles, MFA is mandatory in production deployments. Ground stations are pre-loaded with operator public keys before mission start - no credential transmission occurs over the space link.
+
+### Quantum-Resistant Cryptography
+
+Standard public-key cryptography (RSA, ECDH) is vulnerable to Shor's algorithm running on a cryptographically relevant quantum computer (CRQC). While no CRQC exists today, intelligence agencies routinely record encrypted traffic with the intent to decrypt it once quantum hardware matures - a practice called "harvest now, decrypt later." A Mars mission launched in 2030 might transmit sensitive crew health data and mission plans that remain classified or personally identifiable for 30+ years. The quantum threat timeline overlaps directly with long-duration mission data sensitivity windows.
+
+IoST implements a **hybrid classical/post-quantum scheme**: ECDH P-384 key exchange is XOR'd with a CRYSTALS-Kyber-768 key encapsulation at the HKDF derivation step. The resulting AES-256-GCM session key is secure against both classical adversaries (who cannot break ECDH today) and future quantum adversaries (who cannot break Kyber even with a CRQC). Security holds as long as at least one of the two primitives remains unbroken.
+
+```
+Sender                                    Receiver
+  |-- ECDH ephemeral key gen                |
+  |-- Kyber KEM encapsulate(recip_pub) ---->|-- Kyber decapsulate(secret_key)
+  |-- HKDF(ECDH_secret XOR Kyber_secret)   |-- HKDF(ECDH_secret XOR Kyber_secret)
+  |-- AES-256-GCM encrypt(plaintext) ------>|-- AES-256-GCM decrypt(ciphertext)
+```
+
+> [!TIP]
+> The full Kyber-768 implementation requires the `oqs-python` package (Python bindings for liboqs). If liboqs is not installed, IoST automatically falls back to a double-ECDH hybrid scheme that provides classical security. Install liboqs for production deployments: `pip install oqs` (requires the liboqs C library to be pre-installed on your system).
+
+### Known Attack Vectors and Mitigations
+
+| <sub>Attack Vector</sub> | <sub>Real-World Example</sub> | <sub>IoST Mitigation</sub> | <sub>Residual Risk</sub> |
+|---|---|---|---|
+| <sub>**Command Replay**</sub> | <sub>Viasat 2022 - replayed wiper commands</sub> | <sub>Sequence numbers + 5-min staleness window</sub> | <sub>Low - attacker must inject within 5 min</sub> |
+| <sub>**Signal Spoofing**</sub> | <sub>GPS spoofing of ship navigation 2019</sub> | <sub>Signal strength 5-sigma anomaly detection</sub> | <sub>Medium - sophisticated spoofers match baseline</sub> |
+| <sub>**Credential Stuffing**</sub> | <sub>Multiple GS operators 2023</sub> | <sub>5-attempt lockout, bcrypt hashing, TOTP MFA</sub> | <sub>Low with MFA enabled</sub> |
+| <sub>**Insider Threat**</sub> | <sub>NRO contractor data leak 2013</sub> | <sub>RBAC least-privilege + full audit trail</sub> | <sub>Medium - RBAC limits blast radius</sub> |
+| <sub>**Quantum Harvest**</sub> | <sub>Ongoing - NSA PRISM collection</sub> | <sub>Kyber-768 hybrid KEM</sub> | <sub>Low - requires both ECDH and Kyber broken</sub> |
+| <sub>**Supply Chain**</sub> | <sub>SolarWinds 2020, XZ Utils 2024</sub> | <sub>Dependency pinning, SBOM, pre-commit hooks</sub> | <sub>Medium - ongoing vigilance required</sub> |
+| <sub>**DoS / Command Flood**</sub> | <sub>Jamming during satellite window</sub> | <sub>Rate limiting: >20 cmds/10s triggers IDS alert</sub> | <sub>Low for rate; medium for physical RF jamming</sub> |
 
 ---
 
