@@ -193,7 +193,11 @@ class XGBFeatureEngineer:
         fft_feats = np.zeros((n, f * n_fft), dtype=np.float32)
         for col in range(f):
             fft_vals = np.abs(np.fft.rfft(X[:, col]))
-            top_k = fft_vals[1:n_fft + 1]  # Skip DC component
+            # rfft may produce fewer than n_fft+1 components on short signals
+            available = min(n_fft, len(fft_vals) - 1)
+            top_k = np.zeros(n_fft, dtype=np.float32)
+            if available > 0:
+                top_k[:available] = fft_vals[1: available + 1]
             # Broadcast same FFT values to all rows (global property of signal)
             fft_feats[:, col * n_fft: (col + 1) * n_fft] = top_k
         parts.append(fft_feats)
