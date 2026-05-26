@@ -1,0 +1,55 @@
+# Development dependencies for IoST
+
+# Testing
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+hypothesis==6.92.2
+
+# Code Quality
+black==23.12.1
+flake8==6.1.0
+pylint==3.0.3
+mypy==1.8.0
+isort==5.13.2
+
+# Debugging & Profiling
+ipython==8.18.1
+ipdb==0.13.13
+memory-profiler==0.61.0
+py-spy==0.3.14
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+sphinx-autodoc-typehints==1.25.2
+mkdocs==1.5.3
+mkdocs-material==9.5.3
+
+# Development Tools
+jupyter==1.0.0
+notebook==7.0.6
+jupyterlab==4.1.0
+ipywidgets==8.1.1
+
+# Pre-commit Hooks
+pre-commit==3.6.0
+commit-lint==3.0.0
+
+# Performance Analysis
+scalene==1.5.43
+py-flame==0.9.1
+
+# Version Control
+GitPython==3.1.40
+
+# Typing Stubs
+types-requests==2.31.0.10
+types-pyyaml==6.0.12
+
+# Development Utilities
+python-dotenv==1.0.0
+click==8.1.7
+rich==13.7.0
+tqdm==4.66.2

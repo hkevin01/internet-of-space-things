@@ -1,0 +1,108 @@
+# IoST Configuration File
+# Database Configuration
+database:
+  postgres:
+    host: localhost
+    port: 5432
+    database: iosct_prod
+    user: iosct
+    password: ${DB_PASSWORD}
+  
+  influxdb:
+    host: localhost
+    port: 8086
+    database: iosct_telemetry
+    user: iosct
+    password: ${INFLUX_PASSWORD}
+  
+  redis:
+    host: localhost
+    port: 6379
+    db: 0
+
+# Mission Control Settings
+mission_control:
+  max_satellites: 100
+  command_timeout: 30.0
+  telemetry_rate: 1.0  # Hz
+  storage_days: 365
+
+# Communication Configuration
+communication:
+  deep_space_protocol:
+    s_band_frequency: 2.4e9
+    x_band_frequency: 8.4e9
+    ka_band_frequency: 32e9
+    default_band: "X_BAND"
+    error_correction: "TURBO_CODE"
+  
+  cubesat:
+    inter_satellite_link_enabled: true
+    isl_frequency: 23.3e9
+    isl_range: 2000  # km
+
+# Sensors Configuration
+sensors:
+  radiation_detector:
+    enabled: true
+    update_rate: 5  # seconds
+    alarm_threshold: 100  # mSv/year
+  
+  environmental:
+    o2_sensor_enabled: true
+    co2_sensor_enabled: true
+    temperature_sensor_enabled: true
+  
+  navigation:
+    star_tracker_enabled: true
+    imu_enabled: true
+    optical_nav_enabled: true
+
+# AI/ML Configuration
+ml_models:
+  predictive_maintenance:
+    enabled: true
+    model_type: "LSTM"
+    prediction_horizon: 30  # days
+    confidence_threshold: 0.85
+  
+  anomaly_detection:
+    enabled: true
+    algorithm: "ISOLATION_FOREST"
+    contamination: 0.05
+  
+  resource_optimization:
+    enabled: true
+    algorithm: "REINFORCEMENT_LEARNING"
+
+# Edge Computing
+edge_computing:
+  tflite_enabled: true
+  max_model_size: 50  # MB
+  inference_timeout: 500  # ms
+  batch_processing: true
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/iosct.log"
+  max_file_size: 104857600  # 100 MB
+  backup_count: 10
+
+# Security
+security:
+  tls_enabled: true
+  tls_version: "1.3"
+  cipher_suites:
+    - "TLS_AES_256_GCM_SHA384"
+    - "TLS_CHACHA20_POLY1305_SHA256"
+  certificate_path: "/etc/iosct/certs"
+  key_rotation_days: 90
+
+# Performance
+performance:
+  max_workers: 8
+  queue_size: 10000
+  buffer_size: 1000000  # 1 MB
+  compression_enabled: true

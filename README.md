@@ -12,13 +12,35 @@ The Internet of Space Things (IoST) is a revolutionary platform that brings Inte
 
 ## 🎯 Key Features
 
-- **🛡️ Advanced Life Support Monitoring**: Real-time tracking of oxygen, CO2, temperature, and radiation levels
-- **🧭 Deep Space Navigation**: GPS-alternative systems using star trackers and inertial measurement units
-- **🤖 Predictive Maintenance**: AI-powered system health monitoring and failure prediction
-- **📡 Robust Communication**: Space-optimized protocols for inter-satellite and ground station links
-- **⚡ Resource Optimization**: Intelligent power, water, and oxygen management systems
-- **🎮 Mission Control Interface**: Real-time web dashboard with 3D spacecraft visualization
-- **📱 Astronaut Mobile App**: Crew interface for system monitoring and emergency protocols
+### Sensor & Data Collection
+- **🛡️ Advanced Life Support Monitoring**: Real-time O₂/CO₂ tracking, temperature, radiation levels via distributed sensors
+- **🧭 Deep Space Navigation**: Star tracker-based positioning, inertial measurement units, optical navigation
+- **📊 Environmental Monitoring**: Pressure, humidity, particle detection, cosmic ray analysis
+- **⚡ Power System Monitoring**: Battery state-of-charge, thermal management, energy consumption analytics
+
+### Communication & Network
+- **📡 Deep Space Protocols**: Optimized for high-latency, high-loss environments
+- **🛰️ Multi-Band Radio Support**: S-band, X-band, Ka-band communication with programmable antennas
+- **🌐 Inter-Satellite Links (ISL)**: Constellation networking with dynamic routing
+- **🔐 Space-Grade Encryption**: AES-256, ECC-based key exchange, anti-spoofing protocols
+
+### AI & Analytics
+- **🤖 Predictive Maintenance**: LSTM/XGBoost models for failure prediction, RUL estimation
+- **🔍 Anomaly Detection**: Isolation Forests, Autoencoders for behavioral analysis
+- **📈 Resource Optimization**: Dynamic power/water/oxygen allocation using reinforcement learning
+- **🎯 Mission Planning**: AI assistant for trajectory optimization and crew decision support
+
+### Edge Computing
+- **⚙️ On-Orbit Processing**: TensorFlow Lite models running on satellite hardware
+- **📉 Data Reduction**: Intelligent compression, feature extraction to minimize downlink
+- **🔄 Federated Learning**: Distributed ML across constellation without central aggregation
+- **🌊 Stream Processing**: Real-time data pipeline with Apache Kafka/Flink
+
+### Control & Interfaces
+- **🎮 Mission Control Dashboard**: Real-time web interface with 3D visualization
+- **📱 Astronaut App**: Mobile interface for crew situational awareness
+- **⚠️ Emergency Protocols**: Automated responses, crew alerts, failsafe procedures
+- **📡 Ground Station Network**: Multi-site coordination, load balancing, redundancy
 
 ## 🏗️ Architecture
 
@@ -158,12 +180,79 @@ This project will be demonstrated at the International Astronautical Congress (I
 
 ## 📊 Technology Stack
 
-- **Backend**: Python, FastAPI, PostgreSQL, InfluxDB, Redis
-- **Frontend**: React.js, Three.js, D3.js
-- **Mobile**: Flutter
-- **AI/ML**: TensorFlow, PyTorch, scikit-learn
-- **Communication**: MQTT, WebSockets, Custom Space Protocols
-- **Infrastructure**: Docker, Kubernetes, GitHub Actions
+### Core Technologies
+| <sub>Category</sub> | <sub>Technologies</sub> |
+|---|---|
+| <sub>**Backend**</sub> | <sub>Python 3.9+, FastAPI, Asyncio, gRPC</sub> |
+| <sub>**Databases**</sub> | <sub>PostgreSQL, InfluxDB (time-series), Redis (caching)</sub> |
+| <sub>**Frontend**</sub> | <sub>React.js 18+, Three.js (3D), D3.js (data viz), Tailwind CSS</sub> |
+| <sub>**Mobile**</sub> | <sub>Flutter, React Native</sub> |
+| <sub>**AI/ML**</sub> | <sub>TensorFlow, PyTorch, scikit-learn, XGBoost, Prophet</sub> |
+| <sub>**Edge Computing**</sub> | <sub>TensorFlow Lite, ONNX Runtime, Kubernetes at Edge</sub> |
+| <sub>**Communication**</sub> | <sub>MQTT, WebSockets, CoAP, Custom Space Protocols</sub> |
+| <sub>**SDN/Networking**</sub> | <sub>OpenFlow, Mininet (simulation), Ryu Controller</sub> |
+| <sub>**Container/Orchestration**</sub> | <sub>Docker, Docker Compose, Kubernetes, Helm</sub> |
+| <sub>**CI/CD**</sub> | <sub>GitHub Actions, GitLab CI, Jenkins</sub> |
+| <sub>**Monitoring**</sub> | <sub>Prometheus, Grafana, ELK Stack</sub> |
+
+### Python Packages
+Core dependencies managed in [requirements.txt](requirements.txt):
+- `fastapi` - High-performance web framework
+- `asyncio` - Asynchronous I/O
+- `numpy`, `scipy`, `pandas` - Scientific computing
+- `tensorflow`, `torch` - Machine learning
+- `matplotlib`, `plotly` - Data visualization
+- `sqlalchemy` - ORM for databases
+- `pydantic` - Data validation
+- `cryptography` - Security protocols
+
+## � Research Foundation
+
+This project is built on cutting-edge research in space-based IoT systems, CubeSat networks, and edge computing. The following papers provide the academic foundation and inspiration for our implementation:
+
+### Key Academic References
+
+| <sub>Year</sub> | <sub>Title</sub> | <sub>Source</sub> | <sub>Focus Area</sub> |
+|---|---|---|---|
+| <sub>2021</sub> | <sub>Internet of Things in Space: A Review of Opportunities and Challenges from Satellite-Aided Computing to Digitally-Enhanced Space Living</sub> | <sub>MDPI Sensors, arXiv:2109.05971</sub> | <sub>IoT Space Integration</sub> |
+| <sub>2019</sub> | <sub>CubeSat Communications: Recent Advances and Future Challenges</sub> | <sub>IEEE, arXiv:1908.09501</sub> | <sub>CubeSat Networks</sub> |
+| <sub>2023</sub> | <sub>A Comprehensive Survey on Orbital Edge Computing: Systems, Applications and Challenges</sub> | <sub>arXiv:2306.00275</sub> | <sub>Edge Computing</sub> |
+| <sub>2022</sub> | <sub>The Internet of Space Things/CubeSats: A Ubiquitous Cyber-Physical System</sub> | <sub>ScienceDirect</sub> | <sub>Cyber-Physical Systems</sub> |
+| <sub>2022</sub> | <sub>Space-Terrestrial Integrated Internet of Things: Challenges and Opportunities</sub> | <sub>IEEE 9887919</sub> | <sub>STEREO Architecture</sub> |
+| <sub>2019</sub> | <sub>Software-Defined Next-Generation Satellite Networks: Architecture, Benefits and Challenges</sub> | <sub>IEEE 8258968</sub> | <sub>SDN Satellites</sub> |
+| <sub>2019</sub> | <sub>SDSN: Software-defined Space Networking</sub> | <sub>Springer Mobile Networks and Applications</sub> | <sub>Dynamic Networking</sub> |
+| <sub>2025</sub> | <sub>Machine Learning-Based Predictive Maintenance: A Systematic Review</sub> | <sub>MDPI Applied Sciences 15(9):4898</sub> | <sub>Predictive Maintenance</sub> |
+| <sub>2025</sub> | <sub>Predictive Maintenance in Aerospace: Leveraging Machine Learning</sub> | <sub>Springer</sub> | <sub>Aerospace Applications</sub> |
+| <sub>2023</sub> | <sub>Securing CubeSats in Satellite Communication Networks</sub> | <sub>ResearchGate</sub> | <sub>Security & Spoofing</sub> |
+| <sub>2024</sub> | <sub>Offload Strategy for Edge Computing in Satellite Networks Based on SDN</sub> | <sub>ScienceDirect</sub> | <sub>Task Scheduling</sub> |
+| <sub>2024</sub> | <sub>Integrating Communication, Sensing and Computing in Satellite IoT</sub> | <sub>IEEE 10480327</sub> | <sub>Integration Frameworks</sub> |
+
+Key research insights incorporated into IoST:
+- **Orbital Edge Computing**: On-board data processing and intelligent target detection to minimize Earth transmission
+- **Software-Defined Networking (SDN)**: Dynamic network topology management and resource optimization
+- **Predictive Maintenance**: ML-based fault prediction and remaining useful life (RUL) estimation
+- **CubeSat Constellation Management**: Inter-satellite links (ISL) and global coverage optimization
+- **Space-Terrestrial Integration**: Seamless integration between space and ground networks
+- **Cybersecurity**: Anti-spoofing protocols and encryption for satellite communications
+
+## 🎯 Implementation Roadmap
+
+For detailed implementation timeline and milestones, see [ROADMAP.md](ROADMAP.md)
+
+**Current Focus Areas (Q1-Q3 2026):**
+- Advanced SDN controller with multi-orbit network slicing
+- Edge computing capabilities with TensorFlow Lite models
+- Enhanced predictive maintenance using LSTM neural networks
+- Federated learning for distributed ML across constellation
+- Advanced anomaly detection using isolation forests and autoencoders
+
+## 🔬 Scientific Publications
+
+This project aims to contribute to the academic community through:
+- White papers on IoT in deep space environments
+- Case studies on predictive maintenance effectiveness
+- Benchmarks for edge computing in LEO/GEO satellites
+- Architecture documentation for reproducible research
 
 ## 📄 License
 
@@ -172,9 +261,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Contact
 
 - **GitHub Issues**: [Report bugs or request features](https://github.com/yourusername/internet-of-space-things/issues)
+- **Research Collaboration**: Contact for partnership opportunities
 
 ---
 
 **"Connecting the final frontier, one sensor at a time."** 🚀✨
 
 Made with ❤️ for the space exploration community
+
+*Note: This project is actively researched and developed for IAC 2025 presentation and academic publication.*
