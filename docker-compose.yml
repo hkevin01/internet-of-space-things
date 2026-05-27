@@ -8,6 +8,12 @@ services:
     environment:
       - PYTHONPATH=/app/src
       - LOG_LEVEL=INFO
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_ORG=iosct
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=iot_space
+      - POSTGRES_USER=postgres
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
@@ -15,6 +21,33 @@ services:
       - redis
       - influxdb
       - postgres
+      - kafka
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      - zookeeper
+    volumes:
+      - kafka_data:/var/lib/kafka/data
 
   redis:
     image: redis:7-alpine
@@ -31,7 +64,7 @@ services:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
       - DOCKER_INFLUXDB_INIT_PASSWORD=password123
-      - DOCKER_INFLUXDB_INIT_ORG=iot-space
+      - DOCKER_INFLUXDB_INIT_ORG=iosct
       - DOCKER_INFLUXDB_INIT_BUCKET=telemetry
     volumes:
       - influxdb_data:/var/lib/influxdb2
@@ -51,3 +84,6 @@ volumes:
   redis_data:
   influxdb_data:
   postgres_data:
+  kafka_data:
+  zookeeper_data:
+  zookeeper_log:

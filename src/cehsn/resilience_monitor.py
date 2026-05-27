@@ -570,7 +570,9 @@ class ResilienceMonitor:
         
         warning_threshold = metric.threshold_warning or thresholds["warning"]
         critical_threshold = metric.threshold_critical or thresholds["critical"]
-        is_higher_better = metric.is_higher_better if hasattr(metric, 'is_higher_better') else thresholds["higher_better"]
+        # Use threshold config as authoritative for direction; HealthMetric default is True but
+        # the named threshold definition is more specific
+        is_higher_better = thresholds["higher_better"]
         
         alert_level = None
         message = ""
