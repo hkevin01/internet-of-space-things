@@ -35,7 +35,7 @@ class TestSpaceNetwork:
     """Test space network functionality"""
     
     @pytest.fixture
-    async def network(self):
+    def network(self):
         """Create test network"""
         return SpaceNetwork("test-network")
     
@@ -103,7 +103,7 @@ class TestSatelliteManager:
     """Test satellite management functionality"""
     
     @pytest.fixture
-    async def satellite_manager(self):
+    def satellite_manager(self):
         """Create test satellite manager"""
         return SatelliteManager("test-constellation")
     
@@ -170,7 +170,7 @@ class TestMissionControl:
     """Test mission control functionality"""
     
     @pytest.fixture
-    async def mission_control(self):
+    def mission_control(self):
         """Create test mission control"""
         network = SpaceNetwork("test-network")
         satellite_manager = SatelliteManager("test-constellation")

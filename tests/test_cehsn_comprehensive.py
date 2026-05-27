@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
 import pytest
+import pytest_asyncio
 
 # Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -66,7 +67,7 @@ from cehsn.survival_mapgen import (
 class TestOrbitalInferenceEngine:
     """Test orbital inference engine for anomaly detection"""
     
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def inference_engine(self):
         """Create test inference engine"""
         engine = OrbitalInferenceEngine("test-cubesat-01")
@@ -211,7 +212,7 @@ class TestOrbitalInferenceEngine:
 class TestRPACommunicationBridge:
     """Test RPA communication bridge for drone coordination"""
     
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def rpa_bridge(self):
         """Create test RPA communication bridge"""
         bridge = RPACommunicationBridge("test-bridge-01")
@@ -366,7 +367,7 @@ class TestRPACommunicationBridge:
 class TestEthicsEngine:
     """Test ethics engine for AI decision making"""
     
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def ethics_engine(self):
         """Create test ethics engine"""
         engine = EthicsEngine("test-ethics-01", "utilitarian")
@@ -540,7 +541,7 @@ class TestEthicsEngine:
 class TestSurvivalMapGenerator:
     """Test survival map generator for hazard and resource mapping"""
     
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def map_generator(self):
         """Create test map generator"""
         generator = SurvivalMapGenerator("test-generator-01")
@@ -763,7 +764,7 @@ class TestSurvivalMapGenerator:
 class TestResilienceMonitor:
     """Test resilience monitor for network health monitoring"""
     
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def resilience_monitor(self):
         """Create test resilience monitor"""
         monitor = ResilienceMonitor("test-monitor-01", "Test Network")
