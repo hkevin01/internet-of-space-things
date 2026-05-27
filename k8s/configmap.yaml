@@ -1,0 +1,19 @@
+# configmap.yaml - Environment configuration (non-secret values only)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: iosct-config
+  namespace: iosct
+  labels:
+    app.kubernetes.io/part-of: internet-of-space-things
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka-svc:9092"
+  INFLUXDB_URL: "http://influxdb-svc:8086"
+  INFLUXDB_ORG: "iosct"
+  POSTGRES_HOST: "postgresql-svc"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "iosct"
+  POSTGRES_USER: "iosct_app"
+  LOG_LEVEL: "INFO"
+  SENSOR_FUSION_WINDOW: "10"
+  KAFKA_CONSUMER_GROUP: "iosct-telemetry-processor"

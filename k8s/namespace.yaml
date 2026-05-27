@@ -1,0 +1,9 @@
+# namespace.yaml - IoST Kubernetes Namespace
+# Isolates all IoST resources from other cluster workloads.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: iosct
+  labels:
+    app.kubernetes.io/part-of: internet-of-space-things
+    environment: production

@@ -1,0 +1,36 @@
+# ingress.yaml - Nginx Ingress for external access to mission control dashboard
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: iosct-ingress
+  namespace: iosct
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/rate-limit-connections: "20"
+    nginx.ingress.kubernetes.io/rate-limit-rps: "50"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - iosct.example.com
+      secretName: iosct-tls
+  rules:
+    - host: iosct.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mission-control-svc
+                port:
+                  name: http
+          - path: /influxdb
+            pathType: Prefix
+            backend:
+              service:
+                name: influxdb-svc
+                port:
+                  name: http
