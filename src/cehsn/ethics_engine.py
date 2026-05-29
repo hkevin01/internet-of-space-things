@@ -166,7 +166,7 @@ class EthicsEngine:
         if not self.is_active:
             raise RuntimeError("Ethics engine not active")
         
-        start_time = datetime.utcnow()
+        start_time = datetime.now()
         
         try:
             # Find applicable ethical rules
@@ -190,7 +190,7 @@ class EthicsEngine:
             # Calculate confidence
             confidence = self._calculate_confidence(context, applicable_rules, ethical_score)
             
-            processing_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+            processing_time = (datetime.now() - start_time).total_seconds() * 1000
             
             assessment = EthicalAssessment(
                 decision_id=context.decision_id,
@@ -244,7 +244,7 @@ class EthicsEngine:
         )
         
         # Add to audit log
-        decision.audit_log.append(f"Decision created at {datetime.utcnow().isoformat()}")
+        decision.audit_log.append(f"Decision created at {datetime.now().isoformat()}")
         decision.audit_log.append(f"Ethical score: {assessment.ethical_score:.2f}")
         decision.audit_log.append(f"Violations detected: {len(assessment.violations)}")
         
@@ -316,7 +316,7 @@ class EthicsEngine:
             decision.human_approver = approver
             decision.override_reason = override_reason
             decision.implementation_status = "approved"
-            decision.audit_log.append(f"Approved by {approver} at {datetime.utcnow().isoformat()}")
+            decision.audit_log.append(f"Approved by {approver} at {datetime.now().isoformat()}")
             
             if override_reason:
                 decision.audit_log.append(f"Override reason: {override_reason}")
@@ -346,7 +346,7 @@ class EthicsEngine:
             
             # Update decision
             decision.implementation_status = "rejected"
-            decision.audit_log.append(f"Rejected by {rejector} at {datetime.utcnow().isoformat()}")
+            decision.audit_log.append(f"Rejected by {rejector} at {datetime.now().isoformat()}")
             decision.audit_log.append(f"Rejection reason: {reason}")
             
             self.metrics["decisions_rejected"] += 1

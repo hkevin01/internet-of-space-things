@@ -182,7 +182,7 @@ class DataCompressionEngine:
             'compressed_size': 0,
             'compression_ratio': 0.0,
             'methods_used': [],
-            'timestamp': datetime.utcnow(),
+            'timestamp': datetime.now(),
             'priority_preserved': {}
         }
         
@@ -367,7 +367,7 @@ class FederatedLearningManager:
         # Update local model
         self.aggregated_updates.append({
             'version': self.global_model_version,
-            'timestamp': datetime.utcnow(),
+            'timestamp': datetime.now(),
             'gradients': aggregated_gradients,
             'learning_rate': learning_rate
         })

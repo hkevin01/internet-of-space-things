@@ -129,13 +129,13 @@ class SurvivalMap:
     def add_layer(self, layer: MapLayer):
         """Add a layer to the map"""
         self.layers[layer.layer_id] = layer
-        self.last_updated = datetime.utcnow()
+        self.last_updated = datetime.now()
     
     def remove_layer(self, layer_id: str) -> bool:
         """Remove a layer from the map"""
         if layer_id in self.layers:
             del self.layers[layer_id]
-            self.last_updated = datetime.utcnow()
+            self.last_updated = datetime.now()
             return True
         return False
 
@@ -211,11 +211,11 @@ class SurvivalMapGenerator:
             logger.error("Map generator not active")
             return None
         
-        start_time = datetime.utcnow()
+        start_time = datetime.now()
         
         try:
             resolution = resolution_meters or self.default_resolution
-            map_name = name or f"survival_map_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+            map_name = name or f"survival_map_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             map_id = f"map_{len(self.active_maps):04d}_{int(start_time.timestamp())}"
             
             # Create new survival map
@@ -249,7 +249,7 @@ class SurvivalMapGenerator:
                 await self._cleanup_old_maps()
             
             # Update metrics
-            generation_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+            generation_time = (datetime.now() - start_time).total_seconds() * 1000
             self._update_generation_metrics(generation_time)
             
             logger.info(f"Generated survival map {map_id} with {len(survival_map.layers)} layers "
@@ -278,11 +278,11 @@ class SurvivalMapGenerator:
             
             # Update layer with new data
             layer.points.extend(new_data)
-            layer.last_updated = datetime.utcnow()
+            layer.last_updated = datetime.now()
             
             # Remove expired points if expiry is set
             if layer.expiry_time:
-                current_time = datetime.utcnow()
+                current_time = datetime.now()
                 layer.points = [
                     point for point in layer.points
                     if current_time - point.timestamp < timedelta(hours=24)
@@ -292,7 +292,7 @@ class SurvivalMapGenerator:
             if len(survival_map.layers) > 1:
                 survival_map.composite_score = await self._generate_composite_score(survival_map)
             
-            survival_map.last_updated = datetime.utcnow()
+            survival_map.last_updated = datetime.now()
             self.metrics["updates_processed"] += 1
             
             logger.info(f"Updated layer {layer_id} in map {map_id} with {len(new_data)} new points")
@@ -635,7 +635,7 @@ class SurvivalMapGenerator:
             layer_type=MapType.WEATHER,
             bounds=bounds,
             resolution_meters=resolution,
-            expiry_time=datetime.utcnow() + timedelta(hours=6)  # Weather data expires
+            expiry_time=datetime.now() + timedelta(hours=6)  # Weather data expires
         )
         
         # Generate weather data

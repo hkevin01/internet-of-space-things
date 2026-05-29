@@ -215,7 +215,7 @@ class OrbitalInferenceEngine:
     
     async def get_inference_summary(self, hours_back: float = 24.0) -> Dict[str, Any]:
         """Get summary of inference results over specified time period"""
-        cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
+        cutoff_time = datetime.now() - timedelta(hours=hours_back)
         
         recent_results = [
             result for result in self.inference_history

@@ -290,7 +290,7 @@ class RPACommunicationBridge:
                 status="executing",
                 current_waypoint=0,
                 progress_percent=0.0,
-                estimated_completion=datetime.utcnow() + timedelta(
+                estimated_completion=datetime.now() + timedelta(
                     minutes=mission_plan.estimated_duration_minutes
                 )
             )
@@ -379,7 +379,7 @@ class RPACommunicationBridge:
                 # Update mission status with telemetry
                 mission_status = self.mission_status[active_mission_id]
                 mission_status.telemetry.update(telemetry_data)
-                mission_status.last_update = datetime.utcnow()
+                mission_status.last_update = datetime.now()
                 
                 # Update progress if position data available
                 if "latitude" in telemetry_data and "longitude" in telemetry_data:

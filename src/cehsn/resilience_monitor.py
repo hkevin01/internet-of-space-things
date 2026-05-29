@@ -369,7 +369,7 @@ class ResilienceMonitor:
                 "alert_counts_by_level": alert_counts,
                 "network_connectivity": await self._calculate_network_connectivity(),
                 "uptime_percent": self.metrics["network_uptime_percent"],
-                "last_updated": datetime.utcnow().isoformat()
+                "last_updated": datetime.now().isoformat()
             }
             
         except Exception as e:
@@ -428,7 +428,7 @@ class ResilienceMonitor:
             alert = self.active_alerts[alert_id]
             alert.acknowledged = True
             alert.details["acknowledged_by"] = acknowledger
-            alert.details["acknowledged_at"] = datetime.utcnow().isoformat()
+            alert.details["acknowledged_at"] = datetime.now().isoformat()
             
             logger.info(f"Alert {alert_id} acknowledged by {acknowledger}")
             return True
@@ -446,7 +446,7 @@ class ResilienceMonitor:
             
             alert = self.active_alerts[alert_id]
             alert.resolved = True
-            alert.resolution_time = datetime.utcnow()
+            alert.resolution_time = datetime.now()
             alert.details["resolved_by"] = resolver
             alert.details["resolution_note"] = resolution_note
             
@@ -469,7 +469,7 @@ class ResilienceMonitor:
                 logger.error(f"Node {node_id} not found")
                 return None
             
-            operation_id = f"heal_{node_id}_{int(datetime.utcnow().timestamp())}"
+            operation_id = f"heal_{node_id}_{int(datetime.now().timestamp())}"
             
             operation = HealingOperation(
                 operation_id=operation_id,
@@ -485,7 +485,7 @@ class ResilienceMonitor:
             success = await self._execute_healing_operation(operation)
             
             operation.success = success
-            operation.completed_at = datetime.utcnow()
+            operation.completed_at = datetime.now()
             
             if success:
                 operation.recovery_time_seconds = (
@@ -630,7 +630,7 @@ class ResilienceMonitor:
             node.health_status = HealthStatus.DEGRADED
         else:
             # Check if node is responsive
-            time_since_last_seen = datetime.utcnow() - node.last_seen
+            time_since_last_seen = datetime.now() - node.last_seen
             if time_since_last_seen > timedelta(minutes=10):
                 node.health_status = HealthStatus.FAILED
             elif time_since_last_seen > timedelta(minutes=5):
@@ -641,7 +641,7 @@ class ResilienceMonitor:
     async def _generate_alert(self, node_id: str, level: AlertLevel, message: str,
                             details: Dict[str, Any] = None):
         """Generate a new alert"""
-        alert_id = f"alert_{node_id}_{int(datetime.utcnow().timestamp())}"
+        alert_id = f"alert_{node_id}_{int(datetime.now().timestamp())}"
         
         # Check for duplicate alerts
         similar_alerts = [
@@ -649,7 +649,7 @@ class ResilienceMonitor:
             if (alert.node_id == node_id and 
                 alert.message == message and 
                 not alert.resolved and
-                (datetime.utcnow() - alert.timestamp).total_seconds() < 300)  # 5 minutes
+                (datetime.now() - alert.timestamp).total_seconds() < 300)  # 5 minutes
         ]
         
         if similar_alerts:
@@ -684,7 +684,7 @@ class ResilienceMonitor:
         # Use the first suggested action
         action = alert.suggested_actions[0]
         
-        operation_id = f"auto_heal_{alert.node_id}_{int(datetime.utcnow().timestamp())}"
+        operation_id = f"auto_heal_{alert.node_id}_{int(datetime.now().timestamp())}"
         
         operation = HealingOperation(
             operation_id=operation_id,
@@ -707,7 +707,7 @@ class ResilienceMonitor:
             success = await self._execute_healing_operation(operation)
             
             operation.success = success
-            operation.completed_at = datetime.utcnow()
+            operation.completed_at = datetime.now()
             
             if success:
                 operation.recovery_time_seconds = (
@@ -720,7 +720,7 @@ class ResilienceMonitor:
             
         except Exception as e:
             operation.error_message = str(e)
-            operation.completed_at = datetime.utcnow()
+            operation.completed_at = datetime.now()
             logger.error(f"Healing operation {operation.operation_id} failed: {e}")
     
     async def _execute_healing_operation(self, operation: HealingOperation) -> bool:
@@ -829,7 +829,7 @@ class ResilienceMonitor:
         if node_id not in self.health_history:
             return []
         
-        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+        cutoff_time = datetime.now() - timedelta(hours=hours)
         
         return [
             metric for metric in self.health_history[node_id]
@@ -874,7 +874,7 @@ class ResilienceMonitor:
     
     async def _update_network_topology(self):
         """Update network topology information"""
-        self.topology.last_updated = datetime.utcnow()
+        self.topology.last_updated = datetime.now()
         
         # Update redundancy groups (simplified)
         self.topology.redundancy_groups = self._identify_redundancy_groups()
@@ -991,7 +991,7 @@ class ResilienceMonitor:
     
     async def _check_stale_nodes(self):
         """Check for nodes that haven't reported recently"""
-        current_time = datetime.utcnow()
+        current_time = datetime.now()
         stale_threshold = timedelta(minutes=10)
         
         for node_id, node in self.topology.nodes.items():
@@ -1042,7 +1042,7 @@ class ResilienceMonitor:
     
     async def _cleanup_old_metrics(self):
         """Remove old health metrics"""
-        cutoff_time = datetime.utcnow() - timedelta(hours=self.metric_retention_hours)
+        cutoff_time = datetime.now() - timedelta(hours=self.metric_retention_hours)
         
         for node_id in self.health_history:
             self.health_history[node_id] = [
@@ -1052,7 +1052,7 @@ class ResilienceMonitor:
     
     async def _cleanup_resolved_alerts(self):
         """Remove old resolved alerts"""
-        cutoff_time = datetime.utcnow() - timedelta(hours=self.alert_retention_hours)
+        cutoff_time = datetime.now() - timedelta(hours=self.alert_retention_hours)
         
         alerts_to_remove = []
         for alert_id, alert in self.active_alerts.items():
@@ -1066,7 +1066,7 @@ class ResilienceMonitor:
     
     async def _cleanup_old_healing_operations(self):
         """Remove old healing operations"""
-        cutoff_time = datetime.utcnow() - timedelta(hours=72)  # 3 days
+        cutoff_time = datetime.now() - timedelta(hours=72)  # 3 days
         
         operations_to_remove = []
         for op_id, operation in self.healing_operations.items():

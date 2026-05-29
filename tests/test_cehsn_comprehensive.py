@@ -174,7 +174,7 @@ class TestOrbitalInferenceEngine:
         calibration_data = {
             "offset": 10.0,
             "scale_factor": 1.05,
-            "last_calibrated": datetime.utcnow().isoformat()
+            "last_calibrated": datetime.now().isoformat()
         }
         
         result = await inference_engine.calibrate_sensor("sensor-001", calibration_data)
@@ -1202,7 +1202,7 @@ class TestCEHSNIntegration:
             readings.append(reading)
         
         # Process readings and measure performance
-        start_time = datetime.utcnow()
+        start_time = datetime.now()
         
         results = []
         for reading in readings:
@@ -1210,7 +1210,7 @@ class TestCEHSNIntegration:
             if result:
                 results.append(result)
         
-        end_time = datetime.utcnow()
+        end_time = datetime.now()
         processing_time = (end_time - start_time).total_seconds()
         
         # Verify performance
