@@ -192,7 +192,7 @@ class TestMissionControl:
             objective_id="test-obj-1",
             title="Test Objective",
             description="A test objective",
-            target_completion=datetime.utcnow() + timedelta(hours=1),
+            target_completion=datetime.now() + timedelta(hours=1),
             success_criteria={"test": "passed"}
         )
         
@@ -290,7 +290,7 @@ class TestIntegration:
             objective_id="integration-test-obj",
             title="Integration Test Objective", 
             description="Test the complete system integration",
-            target_completion=datetime.utcnow() + timedelta(minutes=30),
+            target_completion=datetime.now() + timedelta(minutes=30),
             success_criteria={"system_operational": True},
             assigned_assets=["integration-sat"]
         )

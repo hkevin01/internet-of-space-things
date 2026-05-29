@@ -129,7 +129,7 @@ class MissionControl:
                 logger.warning("Mission already started or completed")
                 return False
             
-            self.mission_start_time = datetime.utcnow()
+            self.mission_start_time = datetime.now()
             self.mission_duration = duration
             self.mission_status = MissionStatus.ACTIVE
             
@@ -213,7 +213,7 @@ class MissionControl:
             # Send abort commands to all satellites
             for satellite_id in self.satellite_manager.satellites:
                 abort_cmd = MissionCommand(
-                    command_id=f"abort_{satellite_id}_{datetime.utcnow().timestamp()}",
+                    command_id=f"abort_{satellite_id}_{datetime.now().timestamp()}",
                     target_id=satellite_id,
                     command_type="abort_mission",
                     parameters={"reason": reason},
@@ -236,7 +236,7 @@ class MissionControl:
         # Calculate mission elapsed time
         elapsed_time = None
         if self.mission_start_time:
-            elapsed_time = (datetime.utcnow() - self.mission_start_time).total_seconds()
+            elapsed_time = (datetime.now() - self.mission_start_time).total_seconds()
         
         # Calculate objective completion
         total_objectives = len(self.mission_objectives)
@@ -315,7 +315,7 @@ class MissionControl:
                     command = self.command_queue.pop(0)
                     
                     # Check if command is scheduled for future execution
-                    if command.scheduled_time and datetime.utcnow() < command.scheduled_time:
+                    if command.scheduled_time and datetime.now() < command.scheduled_time:
                         # Re-queue for later
                         self.command_queue.append(command)
                         await asyncio.sleep(1)
@@ -334,7 +334,7 @@ class MissionControl:
         """Execute a single command"""
         try:
             command.status = "executing"
-            command.executed_at = datetime.utcnow()
+            command.executed_at = datetime.now()
             self.active_commands[command.command_id] = command
             
             # Route command based on target and type
@@ -350,7 +350,7 @@ class MissionControl:
             
             # Update command status
             command.status = "completed" if result else "failed"
-            command.result = {"success": result, "timestamp": datetime.utcnow().isoformat()}
+            command.result = {"success": result, "timestamp": datetime.now().isoformat()}
             
             # Move to history
             self.command_history.append(command)
@@ -497,7 +497,7 @@ class MissionControl:
                             parameters: Dict[str, Any] = None) -> AlertCondition:
         """Generate system alert"""
         alert = AlertCondition(
-            alert_id=f"{source}_{datetime.utcnow().timestamp()}",
+            alert_id=f"{source}_{datetime.now().timestamp()}",
             severity=severity,
             source=source,
             message=message,
@@ -533,7 +533,7 @@ class MissionControl:
         for system_id in affected_systems:
             if system_id in self.satellite_manager.satellites:
                 safe_mode_cmd = MissionCommand(
-                    command_id=f"emergency_safe_{system_id}_{datetime.utcnow().timestamp()}",
+                    command_id=f"emergency_safe_{system_id}_{datetime.now().timestamp()}",
                     target_id=system_id,
                     command_type="safe_mode",
                     parameters={"reason": f"Emergency response: {emergency_type}"},

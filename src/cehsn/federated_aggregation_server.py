@@ -575,7 +575,7 @@ class FederatedAggregationServer:
         self._global_model.n_total_samples += n_total_samples
         self._global_model.convergence_delta = convergence_delta
         self._global_model.privacy_budget_used = self._dp.epsilon_used
-        self._global_model.last_updated = datetime.utcnow()
+        self._global_model.last_updated = datetime.now()
 
         converged = convergence_delta < self._convergence_threshold
 

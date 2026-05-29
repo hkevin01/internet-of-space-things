@@ -77,7 +77,7 @@ class SpaceNetwork:
         self.network_status = NetworkStatus.ACTIVE
         self.emergency_protocols_active = False
         self.total_data_transmitted = 0.0  # GB
-        self.network_uptime = datetime.utcnow()
+        self.network_uptime = datetime.now()
         
         # Configuration
         self.max_hop_count = 5
@@ -94,7 +94,7 @@ class SpaceNetwork:
                 return False
             
             self.nodes[node.node_id] = node
-            node.last_contact = datetime.utcnow()
+            node.last_contact = datetime.now()
             
             # Initialize routing for new node
             await self._update_routing_table()
@@ -128,7 +128,7 @@ class SpaceNetwork:
                 source_node=source_id,
                 target_node=target_id,
                 link_type=link_type,
-                established_at=datetime.utcnow(),
+                established_at=datetime.now(),
                 signal_strength=signal_strength,
                 bandwidth=bandwidth,
                 latency=latency,
@@ -207,7 +207,7 @@ class SpaceNetwork:
             
             # Simulate data transmission through route
             data_size = len(json.dumps(data).encode()) / (1024 * 1024)  # MB
-            transmission_time = datetime.utcnow()
+            transmission_time = datetime.now()
             
             for i in range(len(route) - 1):
                 current_node = route[i]
@@ -263,14 +263,14 @@ class SpaceNetwork:
         active_nodes = sum(1 for node in self.nodes.values() if node.status == NetworkStatus.ACTIVE)
         total_nodes = len(self.nodes)
         active_links = sum(1 for link in self.links.values() if 
-                          datetime.utcnow() - link.established_at < self.link_timeout)
+                          datetime.now() - link.established_at < self.link_timeout)
         total_links = len(self.links)
         
         avg_signal_strength = np.mean([link.signal_strength for link in self.links.values()]) if self.links else 0
         avg_latency = np.mean([link.latency for link in self.links.values()]) if self.links else 0
         total_bandwidth = sum(link.bandwidth for link in self.links.values())
         
-        uptime_hours = (datetime.utcnow() - self.network_uptime).total_seconds() / 3600
+        uptime_hours = (datetime.now() - self.network_uptime).total_seconds() / 3600
         
         health_metrics = {
             "network_status": self.network_status.value,

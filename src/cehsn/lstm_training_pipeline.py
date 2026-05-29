@@ -233,7 +233,7 @@ class FailureDataGenerator:
                 all_samples.append(FailureSample(
                     component_id=comp_id,
                     component_type=component_type,
-                    timestamp=datetime.utcnow(),
+                    timestamp=datetime.now(),
                     features=feat_vals,
                     rul_hours=max(0.0, rul),
                     is_failure_event=(step == n_samples - 1),

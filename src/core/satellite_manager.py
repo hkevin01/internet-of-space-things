@@ -95,7 +95,7 @@ class Satellite:
         self.status = SatelliteStatus.OPERATIONAL
         
         # Mission parameters
-        self.mission_start_time = datetime.utcnow()
+        self.mission_start_time = datetime.now()
         self.total_operation_time = timedelta()
         self.data_collected = 0.0  # GB
         self.commands_executed = 0
@@ -109,7 +109,7 @@ class Satellite:
     async def update_orbital_position(self, current_time: Optional[datetime] = None) -> Tuple[np.ndarray, np.ndarray]:
         """Update satellite position and velocity using orbital mechanics"""
         if current_time is None:
-            current_time = datetime.utcnow()
+            current_time = datetime.now()
         
         # Time since epoch in seconds
         dt = (current_time - self.orbital_elements.epoch).total_seconds()
@@ -221,7 +221,7 @@ class Satellite:
         
         # Simulate data collection based on sensor type
         data = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now().isoformat(),
             "satellite_id": self.config.satellite_id,
             "sensor_type": sensor_type,
             "duration": duration,
@@ -300,7 +300,7 @@ class Satellite:
         else:
             self.status = SatelliteStatus.OPERATIONAL
         
-        self.health.last_health_check = datetime.utcnow()
+        self.health.last_health_check = datetime.now()
         return self.health
     
     async def enter_safe_mode(self, reason: str):
@@ -322,7 +322,7 @@ class Satellite:
         return {
             "satellite_id": self.config.satellite_id,
             "name": self.config.name,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now().isoformat(),
             "status": self.status.value,
             "position": self.state.position.tolist(),
             "velocity": self.state.velocity.tolist(),
@@ -394,7 +394,7 @@ class SatelliteManager:
     async def update_constellation(self, current_time: Optional[datetime] = None):
         """Update all satellites in constellation"""
         if current_time is None:
-            current_time = datetime.utcnow()
+            current_time = datetime.now()
         
         update_tasks = []
         for satellite in self.satellites.values():
@@ -457,6 +457,6 @@ class SatelliteManager:
         """Get telemetry from all satellites"""
         return {
             "constellation_name": self.constellation_name,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now().isoformat(),
             "satellites": {sat_id: sat.get_telemetry() for sat_id, sat in self.satellites.items()}
         }
