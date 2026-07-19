@@ -84,7 +84,7 @@ class MissionPlan:
     safety_constraints: Dict[str, Any] = field(default_factory=dict)
     success_criteria: List[str] = field(default_factory=list)
     contingency_plans: List[str] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now)
     scheduled_start: Optional[datetime] = None
     
     def __post_init__(self):
@@ -103,7 +103,7 @@ class MissionStatus:
     estimated_completion: datetime
     telemetry: Dict[str, Any] = field(default_factory=dict)
     issues: List[str] = field(default_factory=list)
-    last_update: datetime = field(default_factory=datetime.utcnow)
+    last_update: datetime = field(default_factory=datetime.now)
 
 
 class RPACommunicationBridge:

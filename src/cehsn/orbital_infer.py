@@ -44,7 +44,7 @@ class GeospatialCoordinate:
     longitude: float  # degrees
     altitude: Optional[float] = None  # meters
     uncertainty_radius: float = 1000.0  # meters
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
@@ -55,7 +55,7 @@ class SensorReading:
     reading_value: float
     units: str
     coordinate: GeospatialCoordinate
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -71,7 +71,7 @@ class InferenceResult:
     affected_area_km2: Optional[float] = None
     predicted_duration_hours: Optional[float] = None
     risk_factors: List[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
     raw_data: Dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self):

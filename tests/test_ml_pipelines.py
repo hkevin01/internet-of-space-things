@@ -10,12 +10,18 @@ Requirement: Verify all four ML pipeline modules function correctly
 import math
 import pytest
 import numpy as np
+from datetime import datetime, timedelta
+from typing import List
+from pathlib import Path
+import warnings
 
 from src.cehsn import (
     FailureDataGenerator, FailureSample, LSTMTrainingPipeline, TrainingConfig,
     XGBoostRULPredictor, XGBConfig,
     RLResourceOptimizer, MissionState, SpaceMissionEnv, ResourceAllocation,
     FederatedAggregationServer, SimulatedSatelliteClient, ClientUpdate,
+    MissionBenchmarkGenerator, MissionProfile, RULPredictor, HealthMetric,
+    PredictiveMaintenanceEngine,
 )
 
 
@@ -277,3 +283,243 @@ class TestFederatedServer:
         for g in upd.gradients.values():
             # Gradient norms should be small relative to weight magnitude
             assert np.linalg.norm(g) < np.linalg.norm(list(weights.values())[0]) * 0.5
+
+
+# ---------------------------------------------------------------------------
+# Predictive maintenance calibration tests
+# ---------------------------------------------------------------------------
+
+class TestPredictiveMaintenanceCalibration:
+    """Tests for mission-calibrated RUL and benchmark dataset generation."""
+
+    def test_benchmark_generator_creates_time_series(self):
+        gen = MissionBenchmarkGenerator(seed=7)
+        profile = MissionProfile(
+            mission_name="mars_transfer",
+            radiation_factor=1.8,
+            thermal_cycling_factor=1.4,
+            duty_cycle=0.85,
+        )
+        dataset = gen.generate_component_dataset(
+            component_type="battery",
+            mission_profile=profile,
+            n_components=3,
+            horizon_hours=72,
+            step_hours=6,
+        )
+
+        assert len(dataset) == 3
+        first_series = next(iter(dataset.values()))
+        assert len(first_series) == 13  # 0..72 in 6h steps
+        assert first_series[0].value >= first_series[-1].value
+
+    def test_mission_calibration_increases_rate_under_stress(self):
+        gen = MissionBenchmarkGenerator(seed=13)
+        profile = MissionProfile(
+            mission_name="deep_space_high_stress",
+            radiation_factor=2.0,
+            thermal_cycling_factor=1.5,
+            duty_cycle=0.9,
+            communication_latency_factor=1.4,
+            shadowing_factor=1.3,
+        )
+        dataset = gen.generate_component_dataset(
+            component_type="battery",
+            mission_profile=profile,
+            n_components=2,
+            horizon_hours=240,
+            step_hours=12,
+            noise_std=0.2,
+        )
+
+        predictor = RULPredictor()
+        predictor.register_mission_profile(profile)
+        history = list(dataset.values())[0]
+
+        result = predictor.calibrate_component_for_mission(
+            component_type="battery",
+            mission_name=profile.mission_name,
+            historical_data=history,
+        )
+
+        assert result.calibrated_degradation_rate > result.baseline_degradation_rate
+        assert 0.35 <= result.confidence <= 0.9
+
+    def test_mission_aware_rul_is_lower_for_high_stress_profile(self):
+        predictor = RULPredictor()
+        profile = MissionProfile(
+            mission_name="lunar_surface_ops",
+            radiation_factor=1.7,
+            thermal_cycling_factor=1.6,
+            duty_cycle=0.85,
+        )
+        predictor.register_mission_profile(profile)
+
+        now = datetime(2026, 1, 1)
+        hist: List[HealthMetric] = []
+        for i in range(8):
+            ts = now + timedelta(hours=i * 24)
+            hist.append(
+                HealthMetric(
+                    metric_name="health_score",
+                    value=100.0 - i * 2.2,
+                    unit="score",
+                    timestamp=ts,
+                )
+            )
+
+        predictor.calibrate_component_for_mission("battery", profile.mission_name, hist)
+
+        base_rul, _ = predictor.predict_rul(
+            component_id="bat-1",
+            component_type="battery",
+            current_metrics={"health_score": 80.0},
+            historical_data=hist,
+            mission_name=None,
+        )
+        stressed_rul, _ = predictor.predict_rul(
+            component_id="bat-1",
+            component_type="battery",
+            current_metrics={"health_score": 80.0},
+            historical_data=hist,
+            mission_name=profile.mission_name,
+        )
+
+        assert stressed_rul < base_rul
+
+
+class _DummyMetricSink:
+    def __init__(self):
+        self.predictions = []
+        self.heartbeats = []
+
+    def write_ml_prediction(self, model_type, component_id, component_type, rul_hours, confidence):
+        self.predictions.append({
+            "model_type": model_type,
+            "component_id": component_id,
+            "component_type": component_type,
+            "rul_hours": rul_hours,
+            "confidence": confidence,
+        })
+
+    def write_system_heartbeat(self, metrics):
+        self.heartbeats.append(dict(metrics))
+
+
+class TestPredictiveMaintenanceLiveFlow:
+    """Integration-style tests for mission-calibrated live telemetry flow."""
+
+    def test_mission_context_and_coupled_degradation_applied(self):
+        sink = _DummyMetricSink()
+        engine = PredictiveMaintenanceEngine(metrics_sink=sink)
+        profile = MissionProfile("lunar_ops", radiation_factor=1.5, duty_cycle=0.8)
+        engine.register_mission_profile(profile)
+        engine.bind_mission_profile_to_satellite("SAT-1", "lunar_ops")
+
+        t0 = datetime(2026, 1, 1, 0, 0, 0)
+        # Seed battery telemetry first, then avionics receives coupling penalty.
+        for k in range(6):
+            engine.process_telemetry(
+                satellite_id="SAT-1",
+                component_id="battery-1",
+                component_type="battery",
+                metrics={"health_score": 95.0 - k * 2.0, "temperature_c": 48.0},
+                current_time=t0 + timedelta(hours=2 * k),
+            )
+
+        event = engine.process_telemetry(
+            satellite_id="SAT-1",
+            component_id="avionics-1",
+            component_type="avionics",
+            metrics={"health_score": 92.0, "power_rail_v": 4.7},
+            current_time=t0 + timedelta(hours=12),
+        )
+
+        assert event is None or event.component_id == "avionics-1"
+        status = engine.component_status["avionics-1"]
+        assert status.health_score < 92.0  # coupled penalty should reduce effective health
+        assert sink.predictions  # prediction persistence hook used
+
+    def test_drift_monitor_triggers_recalibration(self):
+        sink = _DummyMetricSink()
+        engine = PredictiveMaintenanceEngine(
+            metrics_sink=sink,
+            drift_window=4,
+            drift_threshold=0.4,
+            auto_recalibration_min_points=6,
+        )
+        profile = MissionProfile("mars_long", radiation_factor=1.8, thermal_cycling_factor=1.4)
+        engine.register_mission_profile(profile)
+        engine.bind_mission_profile_to_component("battery-2", "mars_long")
+
+        t0 = datetime(2026, 2, 1, 0, 0, 0)
+        for k in range(12):
+            engine.process_telemetry(
+                satellite_id="SAT-2",
+                component_id="battery-2",
+                component_type="battery",
+                metrics={"health_score": 100.0 - k * 3.5, "temperature_c": 44.0},
+                current_time=t0 + timedelta(hours=6 * k),
+            )
+
+        # Recalibration outputs should be persisted as heartbeat records.
+        assert any("pm_calibration_rate" in hb for hb in sink.heartbeats)
+        assert len(engine.calibration_history.get("battery-2", [])) >= 1
+
+    def test_scorecard_metrics_persisted(self):
+        sink = _DummyMetricSink()
+        engine = PredictiveMaintenanceEngine(metrics_sink=sink)
+        profile = MissionProfile("geo_station", radiation_factor=1.2, duty_cycle=0.75)
+        engine.register_mission_profile(profile)
+        engine.bind_mission_profile_to_satellite("SAT-3", "geo_station")
+
+        t0 = datetime(2026, 3, 1, 0, 0, 0)
+        for k in range(24):
+            engine.process_telemetry(
+                satellite_id="SAT-3",
+                component_id="radiator-1",
+                component_type="radiator",
+                metrics={"health_score": 98.0 - k * 1.4, "temperature_c": 68.0},
+                current_time=t0 + timedelta(hours=4 * k),
+            )
+
+        scorecard = engine.get_component_scorecard(
+            satellite_id="SAT-3",
+            component_id="radiator-1",
+            component_type="radiator",
+            current_time=t0 + timedelta(hours=100),
+        )
+        assert scorecard.n_predictions > 0
+        assert scorecard.n_calibrations >= 0
+        assert any("pm_rul_mae_h" in hb for hb in sink.heartbeats)
+
+    def test_warning_ceiling_for_predictive_flow(self):
+        engine = PredictiveMaintenanceEngine()
+        profile = MissionProfile("warn_test")
+        engine.register_mission_profile(profile)
+        engine.bind_mission_profile_to_satellite("SAT-W", "warn_test")
+        t0 = datetime(2026, 4, 1, 0, 0, 0)
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            for k in range(10):
+                engine.process_telemetry(
+                    satellite_id="SAT-W",
+                    component_id="battery-W",
+                    component_type="battery",
+                    metrics={"health_score": 100.0 - k * 2.0, "temperature_c": 40.0},
+                    current_time=t0 + timedelta(hours=k),
+                )
+
+        dep_warnings = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+        assert len(dep_warnings) <= 2
+
+
+def test_cehsn_sources_have_no_utcnow_calls():
+    cehsn_dir = Path(__file__).resolve().parents[1] / "src" / "cehsn"
+    offenders = []
+    for py_file in cehsn_dir.glob("*.py"):
+        text = py_file.read_text(encoding="utf-8")
+        if "utcnow(" in text:
+            offenders.append(py_file.name)
+    assert not offenders, f"Found forbidden utcnow usage in: {offenders}"

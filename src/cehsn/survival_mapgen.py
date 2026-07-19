@@ -90,7 +90,7 @@ class MapPoint:
     elevation: Optional[float] = None
     value: float = 0.0  # Generic value (hazard level, resource quantity, etc.)
     attributes: Dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
     confidence: float = 1.0  # 0.0-1.0 confidence in data accuracy
     source: str = "unknown"
 
@@ -105,8 +105,8 @@ class MapLayer:
     resolution_meters: float = 100.0  # Grid resolution
     points: List[MapPoint] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    last_updated: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now)
+    last_updated: datetime = field(default_factory=datetime.now)
     expiry_time: Optional[datetime] = None
 
 
@@ -119,8 +119,8 @@ class SurvivalMap:
     layers: Dict[str, MapLayer] = field(default_factory=dict)
     composite_score: Optional[np.ndarray] = None
     generation_parameters: Dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    last_updated: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now)
+    last_updated: datetime = field(default_factory=datetime.now)
     
     def get_layer(self, layer_id: str) -> Optional[MapLayer]:
         """Get a specific layer"""

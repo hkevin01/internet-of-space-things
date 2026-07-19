@@ -37,6 +37,23 @@ from .federated_aggregation_server import (
     GlobalModelState,
     SimulatedSatelliteClient,
 )
+from .predictive_maintenance import (
+    AnomalyDetector,
+    BenchmarkScorecard,
+    CalibrationPoint,
+    ComponentHealthStatus,
+    CoupledDegradationModel,
+    HealthMetric,
+    MaintenanceEvent,
+    MaintenanceEventType,
+    MaintenanceScheduler,
+    MissionBenchmarkGenerator,
+    MissionCalibrationModel,
+    MissionCalibrationResult,
+    MissionProfile,
+    PredictiveMaintenanceEngine,
+    RULPredictor,
+)
 
 __all__ = [
     # Legacy
@@ -55,6 +72,13 @@ __all__ = [
     # Federated learning
     'AggregationResult', 'ClientUpdate', 'FederatedAggregationServer',
     'GlobalModelState', 'SimulatedSatelliteClient',
+    # Predictive maintenance
+    'PredictiveMaintenanceEngine', 'RULPredictor', 'AnomalyDetector',
+    'MaintenanceScheduler', 'MissionProfile', 'MissionCalibrationModel',
+    'MissionCalibrationResult', 'MissionBenchmarkGenerator',
+    'BenchmarkScorecard', 'CoupledDegradationModel',
+    'MaintenanceEventType', 'MaintenanceEvent', 'ComponentHealthStatus',
+    'HealthMetric', 'CalibrationPoint',
 ]
 
 __version__ = "1.0.0"

@@ -65,7 +65,7 @@ class NetworkNode:
     firmware_version: str = "unknown"
     capabilities: List[str] = field(default_factory=list)
     connections: Set[str] = field(default_factory=set)  # Connected node IDs
-    last_seen: datetime = field(default_factory=datetime.utcnow)
+    last_seen: datetime = field(default_factory=datetime.now)
     health_status: HealthStatus = HealthStatus.UNKNOWN
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -77,7 +77,7 @@ class HealthMetric:
     metric_name: str
     value: float
     unit: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
     threshold_warning: Optional[float] = None
     threshold_critical: Optional[float] = None
     is_higher_better: bool = True  # True if higher values are better
@@ -92,7 +92,7 @@ class NetworkAlert:
     message: str
     details: Dict[str, Any] = field(default_factory=dict)
     suggested_actions: List[HealingAction] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
     acknowledged: bool = False
     resolved: bool = False
     resolution_time: Optional[datetime] = None
@@ -106,7 +106,7 @@ class HealingOperation:
     action: HealingAction
     trigger_alert: str
     parameters: Dict[str, Any] = field(default_factory=dict)
-    started_at: datetime = field(default_factory=datetime.utcnow)
+    started_at: datetime = field(default_factory=datetime.now)
     completed_at: Optional[datetime] = None
     success: bool = False
     error_message: Optional[str] = None
@@ -120,7 +120,7 @@ class NetworkTopology:
     connections: Dict[str, Set[str]] = field(default_factory=dict)
     redundancy_groups: Dict[str, List[str]] = field(default_factory=dict)
     critical_paths: List[List[str]] = field(default_factory=list)
-    last_updated: datetime = field(default_factory=datetime.utcnow)
+    last_updated: datetime = field(default_factory=datetime.now)
 
 
 class ResilienceMonitor:

@@ -138,7 +138,7 @@ class TrainingResult:
     feature_names: List[str]
     scaler_params: Dict[str, Any]
     training_history: Dict[str, List[float]]
-    trained_at: datetime = field(default_factory=datetime.utcnow)
+    trained_at: datetime = field(default_factory=datetime.now)
 
 
 # ---------------------------------------------------------------------------

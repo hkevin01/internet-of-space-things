@@ -71,7 +71,7 @@ class ClientUpdate:
     gradients: Dict[str, np.ndarray]
     n_samples: int
     loss: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
     signature: str = ""
 
     def compute_signature(self, secret_key: bytes) -> str:
@@ -110,8 +110,8 @@ class GlobalModelState:
     n_total_samples: int = 0
     convergence_delta: float = float("inf")
     privacy_budget_used: float = 0.0
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    last_updated: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now)
+    last_updated: datetime = field(default_factory=datetime.now)
 
 
 @dataclass

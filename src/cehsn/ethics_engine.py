@@ -57,7 +57,7 @@ class EthicalContext:
     resource_constraints: Dict[str, Any] = field(default_factory=dict)
     legal_constraints: List[str] = field(default_factory=list)
     cultural_context: Optional[str] = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
@@ -71,7 +71,7 @@ class EthicalRule:
     is_absolute: bool = False  # Cannot be overridden
     exceptions: List[str] = field(default_factory=list)
     created_by: str = "system"
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
@@ -88,7 +88,7 @@ class EthicalAssessment:
     confidence: float  # 0.0-1.0
     assessment_time_ms: float
     assessor: str = "ethics_engine"
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
@@ -103,7 +103,7 @@ class EthicalDecision:
     human_approver: Optional[str] = None
     implementation_status: str = "pending"  # pending, approved, implemented, rejected
     audit_log: List[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 class EthicsEngine:
