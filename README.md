@@ -514,11 +514,11 @@ Phase 1 focuses on getting the core plumbing right. This means defining the data
 
 ### Current Validation Snapshot
 
-- [x] Full suite validated on May 29, 2026: **142 passed, 22 skipped, 0 failed** (`tests/ --ignore=tests/check_packages.py`).
-- [x] Fast suite validated: **94 passed, 56 warnings** (`tests/test_core_systems.py`, `tests/test_ml_pipelines.py`, `tests/test_sensors_telemetry.py`, `tests/test_iosct.py`).
+- [x] Full suite validated on July 19, 2026: **150 passed, 22 skipped, 0 failed** (`tests/ --ignore=tests/check_packages.py`).
+- [x] Fast suite validated: **102 passed, 14 warnings** (`tests/test_core_systems.py`, `tests/test_ml_pipelines.py`, `tests/test_sensors_telemetry.py`, `tests/test_iosct.py`).
 - [x] CEHSN comprehensive validated: **48 passed** (`tests/test_cehsn_comprehensive.py`).
 - [x] Legacy compatibility tests triaged; unavailable legacy modules are explicitly skipped instead of failing collection.
-- [ ] Residual warning backlog remains high due string-eval/dynamic-model timestamp paths; direct `utcnow` calls in CEHSN modules have been removed.
+- [x] CEHSN `utcnow` cleanup complete; remaining 14 warnings are isolated to string-eval timestamp paths in core-system tests.
 
 ---
 
