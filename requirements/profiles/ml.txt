@@ -1,0 +1,13 @@
+# ML profile for predictive maintenance, federated learning, and optimization.
+
+numpy==1.25.2
+pandas==2.1.4
+scipy==1.11.4
+scikit-learn==1.3.2
+tensorflow==2.15.0
+torch==2.1.1
+xgboost>=2.0.0
+astropy==5.3.4
+skyfield==1.46
+pyephem==4.1.4
+poliastro==0.17.0

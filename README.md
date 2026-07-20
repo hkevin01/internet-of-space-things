@@ -406,18 +406,30 @@ git clone https://github.com/hkevin01/internet-of-space-things.git
 cd internet-of-space-things
 ```
 
-**Step 2 - Set up a Python virtual environment**
+**Step 2 - Set up a controlled Python virtual environment**
 
 Using a virtual environment is critical to isolate IoST's dependencies from your system Python. The project uses several scientific computing packages (NumPy, TensorFlow, SciPy) that can conflict with other projects if installed globally.
 
 ```bash
-python -m venv venv
-source venv/bin/activate        # Linux / macOS
-# venv\Scripts\activate.bat     # Windows CMD
-# venv\Scripts\Activate.ps1     # Windows PowerShell
-pip install --upgrade pip
-pip install -r requirements.txt
+# Linux / macOS
+chmod +x scripts/bootstrap_env.sh
+scripts/bootstrap_env.sh --profile core
+source .venv/bin/activate
+
+# Optional profiles:
+# scripts/bootstrap_env.sh --profile ml
+# scripts/bootstrap_env.sh --profile full-stack
 ```
+
+The bootstrap script creates a project-local virtual environment, installs from
+profile lockfiles when available, and validates dependencies for that profile.
+See docs/dependency_profiles.md for profile and lockfile details.
+
+### Environment Governance
+
+- Dependency profile and lockfile workflow: docs/dependency_profiles.md
+- Canonical planning document index: docs/planning_index.md
+- Planned timezone-aware UTC migration: docs/timestamp_utc_migration_plan.md
 
 **Step 3 - Configure environment variables**
 
@@ -614,7 +626,7 @@ internet-of-space-things/
 ├── 📋 requirements.txt             # Runtime Python dependencies
 ├── 📋 requirements-dev.txt         # Dev/test additional dependencies
 ├── 🗺️ ROADMAP.md                   # Detailed 5-phase implementation plan
-└── 📊 project_progress_tracker.md  # Live progress tracking
+└── 📊 docs/project_progress_tracker.md  # Canonical live progress tracking
 ```
 
 ---
