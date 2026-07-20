@@ -6,6 +6,12 @@ Generated lockfiles:
 - requirements/locks/core.lock
 - requirements/locks/ml.lock
 - requirements/locks/full-stack.lock
+- requirements/locks/core-py311.lock
+- requirements/locks/full-stack-py311.lock
+
+Lane policy:
+- Python 3.11 uses `*-py311.lock` to preserve legacy ML pins.
+- Python 3.13+ uses the default `*.lock` lane.
 
 Generation policy:
 1. Create/activate a project virtual environment.

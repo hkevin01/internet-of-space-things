@@ -68,12 +68,6 @@ case "$PROFILE" in
 esac
 
 REQ_FILE="requirements/profiles/${PROFILE}.txt"
-LOCK_FILE="requirements/locks/${PROFILE}.lock"
-
-if [[ ! -f "$REQ_FILE" ]]; then
-  echo "Missing requirements profile: $REQ_FILE"
-  exit 1
-fi
 
 if [[ ! -d "$VENV_DIR" ]]; then
   echo "Creating virtual environment at $VENV_DIR"
@@ -82,6 +76,23 @@ fi
 
 # shellcheck disable=SC1090
 source "$VENV_DIR/bin/activate"
+
+PY_TAG=$(python - <<'PY'
+import sys
+print(f"py{sys.version_info.major}{sys.version_info.minor}")
+PY
+)
+
+if [[ "$PY_TAG" == "py311" ]]; then
+  LOCK_FILE="requirements/locks/${PROFILE}-py311.lock"
+else
+  LOCK_FILE="requirements/locks/${PROFILE}.lock"
+fi
+
+if [[ ! -f "$REQ_FILE" ]]; then
+  echo "Missing requirements profile: $REQ_FILE"
+  exit 1
+fi
 
 python -m pip install --upgrade pip setuptools wheel
 

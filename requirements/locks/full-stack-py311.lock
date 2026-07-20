@@ -1,0 +1,22 @@
+# Python 3.11 lock lane for legacy ML-compatible dependency stack.
+# This lane keeps tensorflow/torch pins reproducible on 3.11.
+
+-r core-py311.lock
+
+pandas==2.1.4
+scikit-learn==1.3.2
+tensorflow==2.15.0
+torch==2.1.1
+xgboost==2.0.0
+astropy==5.3.4
+skyfield==1.46
+pyephem==4.1.4
+poliastro==0.17.0
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+hypothesis==6.91.0
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+pre-commit==3.6.0

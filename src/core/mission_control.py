@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from .satellite_manager import Satellite, SatelliteManager, SatelliteStatus
+from .mission_resource_allocator import MissionResourceAllocator, SubsystemState
 from .space_network import CommunicationMode, NetworkNode, SpaceNetwork
 
 logger = logging.getLogger(__name__)
@@ -119,8 +120,50 @@ class MissionControl:
         # Callbacks for external systems
         self.alert_callbacks: List[Callable] = []
         self.telemetry_callbacks: List[Callable] = []
+        self.resource_allocator = MissionResourceAllocator()
         
         logger.info(f"Mission Control '{mission_name}' initialized")
+
+    def recommend_resource_allocation(
+        self,
+        subsystem_metrics: List[Dict[str, Any]],
+        crew_risk: float,
+        mission_phase: str = "nominal",
+    ) -> Dict[str, Any]:
+        """
+        Produce a deterministic, risk-aware resource allocation plan.
+
+        Expected metric keys per subsystem item:
+        - name: subsystem identifier
+        - health_score: normalized health in [0..1]
+        - demand_fraction: desired budget share in [0..1]
+        - criticality: mission criticality in [0..1]
+        - efficiency: optional >0 efficiency factor
+        """
+        states: List[SubsystemState] = []
+        for item in subsystem_metrics:
+            states.append(
+                SubsystemState(
+                    name=str(item.get("name", "unknown")),
+                    health_score=float(item.get("health_score", 1.0)),
+                    demand_fraction=float(item.get("demand_fraction", 0.0)),
+                    criticality=float(item.get("criticality", 0.5)),
+                    efficiency=float(item.get("efficiency", 1.0)),
+                )
+            )
+
+        plan = self.resource_allocator.recommend_allocation(
+            subsystem_states=states,
+            crew_risk=crew_risk,
+            mission_phase=mission_phase,
+        )
+        return {
+            "allocations": plan.allocations,
+            "reserve_fraction": plan.reserve_fraction,
+            "risk_index": plan.risk_index,
+            "mission_utility": plan.mission_utility,
+            "mission_phase": mission_phase,
+        }
     
     async def start_mission(self, duration: Optional[timedelta] = None) -> bool:
         """Start the mission operations"""
