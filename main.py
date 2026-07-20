@@ -404,7 +404,7 @@ class EnhancedIoSPlatform:
                 data = {
                     "device_id": device["id"],
                     "location": device["location"],
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now().isoformat(),
                     "sensor_data": {
                         "temperature": 25.5,
                         "humidity": 60.0,
@@ -472,7 +472,7 @@ class EnhancedIoSPlatform:
                                      f"{status['health_score']:.2f}")
                     
                     # Update last contact time
-                    cubesat.last_contact = datetime.utcnow()
+                    cubesat.last_contact = datetime.now()
                 
                 await asyncio.sleep(30)  # Every 30 seconds
             except Exception as e:
@@ -583,7 +583,7 @@ class EnhancedIoSPlatform:
             radio_status[radio_id] = radio.get_radio_status()
         
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now().isoformat(),
             "platform_status": "operational" if self.running else "stopped",
             "cubesat_constellation": cubesat_status,
             "sdn_controller": sdn_stats,

@@ -96,7 +96,7 @@ class RadiationDetector:
         # Statistics
         self.total_dose = 0.0  # Total accumulated dose (mSv)
         self.peak_dose_rate = 0.0  # Highest dose rate recorded
-        self.detector_uptime = datetime.utcnow()
+        self.detector_uptime = datetime.now()
         
         logger.info(f"Radiation detector {detector_id} initialized")
     
@@ -111,7 +111,7 @@ class RadiationDetector:
             return False
         
         self.is_active = True
-        self.detector_uptime = datetime.utcnow()
+        self.detector_uptime = datetime.now()
         
         # Start monitoring task
         asyncio.create_task(self._monitoring_loop())
@@ -193,7 +193,7 @@ class RadiationDetector:
     
     async def get_dose_rate_trend(self, duration: timedelta) -> Dict[str, Any]:
         """Get radiation dose rate trend over specified duration"""
-        cutoff_time = datetime.utcnow() - duration
+        cutoff_time = datetime.now() - duration
         recent_readings = [r for r in self.readings_history if r.timestamp > cutoff_time]
         
         if not recent_readings:
@@ -259,12 +259,12 @@ class RadiationDetector:
             "confidence": confidence,
             "rate_increase": rate_increase,
             "particle_trend": count_trend,
-            "estimated_arrival": datetime.utcnow() + timedelta(hours=2) if prediction != "no_event_expected" else None
+            "estimated_arrival": datetime.now() + timedelta(hours=2) if prediction != "no_event_expected" else None
         }
     
     def get_detector_status(self) -> Dict[str, Any]:
         """Get comprehensive detector status"""
-        uptime = (datetime.utcnow() - self.detector_uptime).total_seconds()
+        uptime = (datetime.now() - self.detector_uptime).total_seconds()
         
         return {
             "detector_id": self.detector_id,
@@ -326,7 +326,7 @@ class RadiationDetector:
         energies = np.clip(energies, self.energy_range[0], self.energy_range[1])
         
         return RadiationReading(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(),
             radiation_type=radiation_type,
             dose_rate=dose_rate,
             particle_count=particle_count,
@@ -353,7 +353,7 @@ class RadiationDetector:
         spectrum = [props["energy"]] * 10  # Monoenergetic source
         
         return RadiationReading(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(),
             radiation_type=RadiationType.GAMMA,
             dose_rate=measured_rate,
             particle_count=int(measured_rate * 1000),

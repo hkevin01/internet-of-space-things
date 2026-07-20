@@ -55,7 +55,7 @@ class OrbitalElements:
     longitude_of_ascending_node: float  # degrees
     argument_of_periapsis: float  # degrees
     true_anomaly: float  # degrees
-    epoch: datetime = field(default_factory=datetime.utcnow)
+    epoch: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
@@ -68,7 +68,7 @@ class SatelliteState:
     power_level: float = 100.0  # percentage
     fuel_remaining: float = 100.0  # percentage
     temperature: float = 20.0  # Celsius
-    last_updated: datetime = field(default_factory=datetime.utcnow)
+    last_updated: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
@@ -79,7 +79,7 @@ class SatelliteHealthMetrics:
     disk_usage: float = 0.0  # percentage
     communication_status: str = "nominal"
     sensor_status: Dict[str, str] = field(default_factory=dict)
-    last_health_check: datetime = field(default_factory=datetime.utcnow)
+    last_health_check: datetime = field(default_factory=datetime.now)
     anomaly_score: float = 0.0  # 0-1, higher indicates problems
 
 

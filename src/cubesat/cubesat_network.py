@@ -139,7 +139,7 @@ class CubeSatPayload:
     def collect_sensor_data(self, duration: float) -> Dict[str, Any]:
         """Simulate sensor data collection"""
         collected_data = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now().isoformat(),
             "payload_id": self.payload_id,
             "duration": duration,
             "sensors": {}
@@ -217,7 +217,7 @@ class CubeSat:
         # Status and health
         self.is_operational = True
         self.health_score = 1.0
-        self.last_contact = datetime.utcnow()
+        self.last_contact = datetime.now()
         self.total_data_collected = 0.0  # GB
         self.total_messages_relayed = 0
         
@@ -355,7 +355,7 @@ class CubeSat:
                 "latency_requirement": requirements.get("latency", 100),  # ms
                 "reliability_requirement": requirements.get("reliability", 0.99),
                 "service_type": requirements.get("service_type", "best_effort"),
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(),
                 "active": True
             }
             
@@ -397,7 +397,7 @@ class CubeSat:
         # Add processing metadata
         processed_data["processing_info"] = {
             "processed_by": self.cubesat_id,
-            "processing_time": datetime.utcnow().isoformat(),
+            "processing_time": datetime.now().isoformat(),
             "ai_models_used": self.payload.ai_models,
             "edge_processing": True
         }
@@ -413,7 +413,7 @@ class CubeSat:
             # Add relay metadata
             relay_info = {
                 "relayed_by": self.cubesat_id,
-                "relay_time": datetime.utcnow().isoformat(),
+                "relay_time": datetime.now().isoformat(),
                 "source": source_device,
                 "destination": destination,
                 "hop_count": data.get("hop_count", 0) + 1
@@ -554,7 +554,7 @@ class CubeSat:
                 "memory": requirements.get("memory_mb", 256),
                 "bandwidth": requirements.get("bandwidth", 1e6)
             },
-            "deployed_at": datetime.utcnow()
+            "deployed_at": datetime.now()
         }
         
         self.virtual_functions.append(vnf_config)

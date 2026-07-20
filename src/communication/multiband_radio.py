@@ -81,7 +81,7 @@ class ChannelConditions:
     interference_level: float
     weather_impact: str  # "clear", "cloudy", "rain", "storm"
     link_quality_score: float  # 0.0 - 1.0
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
@@ -98,7 +98,7 @@ class CommunicationLink:
     is_active: bool = True
     channel_conditions: Optional[ChannelConditions] = None
     quality_history: List[float] = field(default_factory=list)
-    established_at: datetime = field(default_factory=datetime.utcnow)
+    established_at: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
@@ -255,7 +255,7 @@ class MultibandRadio:
             "final_ber": 0.0
         }
         
-        start_time = datetime.utcnow()
+        start_time = datetime.now()
         data_size = len(data)
         bytes_transmitted = 0
         retransmissions = 0
@@ -290,7 +290,7 @@ class MultibandRadio:
                         break
             
             # Calculate final statistics
-            end_time = datetime.utcnow()
+            end_time = datetime.now()
             transmission_time = (end_time - start_time).total_seconds()
             
             transmission_result.update({

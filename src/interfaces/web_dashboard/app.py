@@ -168,7 +168,7 @@ async def initialize_demo_system():
             objective_id="life-support-monitoring",
             title="Life Support Monitoring",
             description="Monitor critical life support systems",
-            target_completion=datetime.utcnow() + timedelta(hours=2),
+            target_completion=datetime.now() + timedelta(hours=2),
             success_criteria={"oxygen_level": ">95%"},
             assigned_assets=["ISS-MAIN"]
         ),
@@ -176,7 +176,7 @@ async def initialize_demo_system():
             objective_id="communication-test",
             title="Deep Space Communication Test",
             description="Test communication with lunar gateway",
-            target_completion=datetime.utcnow() + timedelta(hours=4),
+            target_completion=datetime.now() + timedelta(hours=4),
             success_criteria={"latency": "<500ms"},
             assigned_assets=["LUNAR-GATEWAY"]
         )
@@ -209,7 +209,7 @@ async def broadcast_telemetry():
                 await manager.broadcast(json.dumps({
                     "type": "telemetry",
                     "data": mission_status,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now().isoformat()
                 }, default=str))
             
             await asyncio.sleep(5)  # Update every 5 seconds
@@ -272,7 +272,7 @@ async def execute_command(command_data: Dict[str, Any]):
     
     try:
         command = MissionCommand(
-            command_id=f"web_{datetime.utcnow().timestamp()}",
+            command_id=f"web_{datetime.now().timestamp()}",
             target_id=command_data.get("target_id", ""),
             command_type=command_data.get("command_type", ""),
             parameters=command_data.get("parameters", {}),

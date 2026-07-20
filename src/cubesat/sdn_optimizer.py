@@ -224,7 +224,7 @@ class OrbitalNetworkOptimizer:
             'predicted_topology': {}
         }
         
-        future_time = datetime.utcnow() + timedelta(hours=prediction_horizon)
+        future_time = datetime.now() + timedelta(hours=prediction_horizon)
         
         # Predict constellation state at future_time
         for orbit_id, orbit_info in self.orbits.items():

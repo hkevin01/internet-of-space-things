@@ -47,7 +47,7 @@ class MissionCommand:
     parameters: Dict[str, Any]
     priority: CommandPriority
     scheduled_time: Optional[datetime] = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now)
     executed_at: Optional[datetime] = None
     result: Optional[Dict[str, Any]] = None
     status: str = "pending"  # pending, executing, completed, failed
@@ -74,7 +74,7 @@ class AlertCondition:
     source: str  # system/satellite that generated the alert
     message: str
     parameters: Dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now)
     acknowledged: bool = False
     resolved: bool = False
 

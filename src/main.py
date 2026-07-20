@@ -6,31 +6,46 @@ Demonstrates the core functionality of the space communication platform
 import asyncio
 import json
 import logging
-import os
-import sys
 from datetime import datetime, timedelta
 
-# Add src directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-from core.mission_control import (
-    CommandPriority,
-    MissionCommand,
-    MissionControl,
-    MissionObjective,
-)
-from core.satellite_manager import (
-    OrbitalElements,
-    OrbitType,
-    SatelliteConfiguration,
-    SatelliteManager,
-)
-from core.space_network import (
-    CommunicationMode,
-    NetworkNode,
-    NetworkStatus,
-    SpaceNetwork,
-)
+try:
+    from .core.mission_control import (
+        CommandPriority,
+        MissionCommand,
+        MissionControl,
+        MissionObjective,
+    )
+    from .core.satellite_manager import (
+        OrbitalElements,
+        OrbitType,
+        SatelliteConfiguration,
+        SatelliteManager,
+    )
+    from .core.space_network import (
+        CommunicationMode,
+        NetworkNode,
+        NetworkStatus,
+        SpaceNetwork,
+    )
+except ImportError:  # pragma: no cover - allows direct "python src/main.py"
+    from core.mission_control import (
+        CommandPriority,
+        MissionCommand,
+        MissionControl,
+        MissionObjective,
+    )
+    from core.satellite_manager import (
+        OrbitalElements,
+        OrbitType,
+        SatelliteConfiguration,
+        SatelliteManager,
+    )
+    from core.space_network import (
+        CommunicationMode,
+        NetworkNode,
+        NetworkStatus,
+        SpaceNetwork,
+    )
 
 # Configure logging
 logging.basicConfig(
@@ -158,7 +173,7 @@ async def demonstrate_mission_operations(mission_control):
             objective_id="life-support-monitoring",
             title="Continuous Life Support Monitoring",
             description="Monitor oxygen, CO2, and atmospheric conditions on ISS",
-            target_completion=datetime.utcnow() + timedelta(hours=1),
+            target_completion=datetime.now() + timedelta(hours=1),
             success_criteria={"oxygen_level": ">95%", "co2_level": "<0.5%"},
             assigned_assets=["ISS-MAIN"]
         ),
@@ -166,7 +181,7 @@ async def demonstrate_mission_operations(mission_control):
             objective_id="deep-space-comm-test", 
             title="Deep Space Communication Test",
             description="Test communication reliability to Mars relay",
-            target_completion=datetime.utcnow() + timedelta(hours=2),
+            target_completion=datetime.now() + timedelta(hours=2),
             success_criteria={"packet_loss": "<5%", "latency": "<300ms"},
             assigned_assets=["LUNAR-SAT-1", "MARS-RELAY"]
         ),
@@ -174,7 +189,7 @@ async def demonstrate_mission_operations(mission_control):
             objective_id="orbital-maintenance",
             title="Orbital Position Maintenance",
             description="Maintain optimal orbital positions for constellation",
-            target_completion=datetime.utcnow() + timedelta(hours=6),
+            target_completion=datetime.now() + timedelta(hours=6),
             success_criteria={"position_accuracy": "<1km", "fuel_usage": "<5%"},
             assigned_assets=["ISS-MAIN", "LUNAR-SAT-1", "MARS-RELAY"]
         )
@@ -217,7 +232,7 @@ async def demonstrate_mission_operations(mission_control):
             parameters={
                 "source_id": "ISS-MAIN",
                 "target_id": "MARS-RELAY",
-                "data": {"telemetry": "life_support_status", "timestamp": datetime.utcnow().isoformat()},
+                "data": {"telemetry": "life_support_status", "timestamp": datetime.now().isoformat()},
                 "priority": 3
             },
             priority=CommandPriority.NORMAL
@@ -229,9 +244,9 @@ async def demonstrate_mission_operations(mission_control):
     
     # Run mission for demonstration period
     demo_duration = 60  # seconds
-    start_time = datetime.utcnow()
+    start_time = datetime.now()
     
-    while (datetime.utcnow() - start_time).total_seconds() < demo_duration:
+    while (datetime.now() - start_time).total_seconds() < demo_duration:
         # Update constellation
         await mission_control.satellite_manager.update_constellation()
         
@@ -239,7 +254,7 @@ async def demonstrate_mission_operations(mission_control):
         status = await mission_control.get_mission_status()
         
         # Log status every 10 seconds
-        if int((datetime.utcnow() - start_time).total_seconds()) % 10 == 0:
+        if int((datetime.now() - start_time).total_seconds()) % 10 == 0:
             logger.info(f"Mission Status: {status['status']}")
             logger.info(f"Active Commands: {status['commands']['active']}")
             logger.info(f"Network Health: {status['network_health']['node_availability']:.2%}")

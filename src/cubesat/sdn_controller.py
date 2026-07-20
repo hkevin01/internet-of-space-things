@@ -39,8 +39,8 @@ class FlowRule:
     timeout: Optional[int] = None
     byte_count: int = 0
     packet_count: int = 0
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    last_used: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now)
+    last_used: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
@@ -104,7 +104,7 @@ class SDNController:
             self.cubesat_nodes[cubesat_id] = {
                 "capabilities": capabilities,
                 "status": "active",
-                "last_heartbeat": datetime.utcnow(),
+                "last_heartbeat": datetime.now(),
                 "flow_table": [],
                 "resource_usage": {"cpu": 0.0, "memory": 0.0, "bandwidth": 0.0}
             }
@@ -344,7 +344,7 @@ class SDNController:
             "service_chains": len(self.service_chains),
             "average_link_utilization": avg_utilization,
             "congestion_points": len(self.congestion_points),
-            "last_updated": datetime.utcnow().isoformat()
+            "last_updated": datetime.now().isoformat()
         }
     
     # Private helper methods
