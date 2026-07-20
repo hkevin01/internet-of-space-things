@@ -7,6 +7,15 @@ __version__ = "1.0.0"
 __author__ = "Internet of Space Things Team"
 __license__ = "MIT"
 
+from .battery_model import (
+    BatteryConfig,
+    BatteryOrbitTrace,
+    BatteryStepState,
+    SolarConfig,
+    eclipse_aware_power_budget,
+    propagate_battery_soc,
+    soc_at_time,
+)
 from .constellation_scheduler import (
     ConstellationSat,
     ConstellationSchedule,
@@ -28,6 +37,7 @@ from .orbit_dynamics import (
     EclipseType,
     GroundStation,
     OrbitalElementsJ2,
+    RAANPhasingPlan,
     RadiationDoseState,
     StationKeepingBudget,
     check_isl_visibility,
@@ -36,12 +46,33 @@ from .orbit_dynamics import (
     compute_j2_secular_rates,
     compute_power_budget_fraction,
     compute_radiation_dose,
+    compute_raan_phasing_plan,
     compute_station_keeping_budget,
     find_contact_windows,
     orbit_eclipse_fraction,
     panel_degradation_from_dose,
     propagate_j2,
     solar_panel_power_fraction,
+)
+from .data_volume_model import (
+    BufferStep,
+    DataVolumeState,
+    InstrumentProfile,
+    buffer_fill_fractions_from_simulation,
+    simulate_constellation_data_volume,
+    simulate_data_volume,
+)
+from .fault_tree import (
+    BasicEvent,
+    FaultGate,
+    FaultTreeDefinition,
+    FaultTreeResult,
+    FMEAEntry,
+    GateType,
+    RiskLevel,
+    SubsystemHealthInput,
+    analyze_fault_tree,
+    default_mission_fault_tree,
 )
 from .satellite_manager import SatelliteManager
 from .space_network import SpaceNetwork
@@ -62,6 +93,14 @@ __all__ = [
     "SubsystemState",
     "AllocationPlan",
     "PhaseTraceSample",
+    # battery model
+    "SolarConfig",
+    "BatteryConfig",
+    "BatteryOrbitTrace",
+    "BatteryStepState",
+    "propagate_battery_soc",
+    "soc_at_time",
+    "eclipse_aware_power_budget",
     # orbit dynamics
     "OrbitalElementsJ2",
     "EciState",
@@ -71,6 +110,7 @@ __all__ = [
     "ContactWindow",
     "RadiationDoseState",
     "StationKeepingBudget",
+    "RAANPhasingPlan",
     "propagate_j2",
     "compute_eclipse_state",
     "compute_j2_secular_rates",
@@ -81,6 +121,7 @@ __all__ = [
     "compute_radiation_dose",
     "panel_degradation_from_dose",
     "compute_station_keeping_budget",
+    "compute_raan_phasing_plan",
     "check_isl_visibility",
     "compute_isl_link_budget",
     # constellation scheduler
@@ -89,6 +130,24 @@ __all__ = [
     "ScheduleEntry",
     "ScheduleEntryType",
     "build_constellation_schedule",
+    # data volume model
+    "InstrumentProfile",
+    "DataVolumeState",
+    "BufferStep",
+    "simulate_data_volume",
+    "simulate_constellation_data_volume",
+    "buffer_fill_fractions_from_simulation",
+    # fault tree
+    "SubsystemHealthInput",
+    "BasicEvent",
+    "FaultGate",
+    "FaultTreeDefinition",
+    "FaultTreeResult",
+    "FMEAEntry",
+    "GateType",
+    "RiskLevel",
+    "analyze_fault_tree",
+    "default_mission_fault_tree",
     # thermal model
     "SpacecraftGeometry",
     "FaceThermalState",
@@ -97,3 +156,4 @@ __all__ = [
     "compute_thermal_state",
     "compute_thermal_demand_fraction",
 ]
+

@@ -1275,3 +1275,235 @@ def compute_isl_link_budget(
         "snr_db": snr_db,
         "link_margin_db": link_margin_db,
     }
+
+
+# ---------------------------------------------------------------------------
+# RAAN-phasing optimizer for multi-plane constellations
+# ---------------------------------------------------------------------------
+
+@dataclass
+class RAANPhasingPlan:
+    """
+    ID: CORE-037-DS1
+    Purpose: Computed phasing plan for distributing N satellites uniformly
+             in right ascension of ascending node (RAAN).
+
+    Fields:
+        n_planes                 - number of orbital planes.
+        target_raan_deg          - desired RAAN [deg] for each satellite.
+        current_raan_deg         - current RAAN [deg] for each satellite.
+        delta_raan_deg           - required RAAN correction [deg], signed.
+        drift_altitude_delta_km  - altitude change used for J2 differential phasing [km].
+        phasing_duration_days    - time at drift altitude to achieve target [days].
+        maneuver_deltaV_m_per_s  - two-impulse Hohmann delta-V per satellite [m/s].
+        maintenance_deltaV_per_year_m_s - annual maintenance to counteract differential J2 [m/s].
+        raan_spacing_deg         - uniform spacing between adjacent planes [deg].
+        sat_ids                  - identifier for each satellite (optional).
+    """
+    n_planes: int
+    target_raan_deg: List[float]
+    current_raan_deg: List[float]
+    delta_raan_deg: List[float]
+    drift_altitude_delta_km: List[float]
+    phasing_duration_days: List[float]
+    maneuver_deltaV_m_per_s: List[float]
+    maintenance_deltaV_per_year_m_s: float
+    raan_spacing_deg: float
+    sat_ids: List[str]
+
+
+def _raan_drift_rate_rad_s(a_km: float, e: float, i_rad: float) -> float:
+    """
+    ID: CORE-037-H1
+    Purpose: J2 RAAN drift rate [rad/s] as a function of orbital elements.
+    Negative for prograde orbits.
+    """
+    p = a_km * (1.0 - e * e)
+    n = math.sqrt(MU_EARTH / a_km ** 3)
+    return -1.5 * J2 * n * (R_EARTH / p) ** 2 * math.cos(i_rad)
+
+
+def _hohmann_deltaV_m_s(a_init_km: float, a_final_km: float) -> float:
+    """
+    ID: CORE-037-H2
+    Purpose: Total two-impulse Hohmann transfer delta-V [m/s] between two
+             circular orbits at a_init and a_final.
+    Inputs: semi-major axes in km.
+    Outputs: total |dv1| + |dv2| in m/s.
+    """
+    v_init = math.sqrt(MU_EARTH / a_init_km) * 1000.0   # km/s -> m/s
+    v_final = math.sqrt(MU_EARTH / a_final_km) * 1000.0
+    a_transfer = (a_init_km + a_final_km) / 2.0
+    v_peri = math.sqrt(MU_EARTH * (2.0 / a_init_km - 1.0 / a_transfer)) * 1000.0
+    v_apo = math.sqrt(MU_EARTH * (2.0 / a_final_km - 1.0 / a_transfer)) * 1000.0
+    dv1 = abs(v_peri - v_init)
+    dv2 = abs(v_final - v_apo)
+    return dv1 + dv2
+
+
+def compute_raan_phasing_plan(
+    current_raan_deg: List[float],
+    elements_ref: OrbitalElementsJ2,
+    sat_ids: Optional[List[str]] = None,
+    raan_ref_deg: float = 0.0,
+    drift_altitude_delta_km: float = 20.0,
+    max_phasing_days: float = 90.0,
+) -> RAANPhasingPlan:
+    """
+    ID: CORE-037-F1
+    Purpose: Compute an optimal RAAN phasing plan to distribute N satellites
+             uniformly in RAAN using J2-differential drift maneuvers.
+    Rationale: Changing RAAN directly requires expensive plane-change burns.
+               Instead, raise or lower orbital altitude by a small delta to
+               exploit differential J2 drift; the satellite drifts to the
+               target RAAN passively, then returns to the reference altitude.
+               Cost = 2x Hohmann burns (to drift orbit and back).
+    Inputs:
+        current_raan_deg     - current RAAN of each satellite [deg].
+        elements_ref         - reference orbital elements (altitude/incl/ecc).
+        sat_ids              - optional identifier list.
+        raan_ref_deg         - RAAN of the first (reference) plane [deg].
+        drift_altitude_delta_km - altitude change for differential drift [km].
+                               Positive = raise orbit (slower RAAN drift for
+                               prograde; use negative to drift faster).
+        max_phasing_days     - cap on phasing duration (drives delta_a choice).
+    Outputs: RAANPhasingPlan.
+    Algorithm:
+        1. N = len(current_raan_deg).
+        2. Target RAAN_k = raan_ref_deg + k * (360/N).
+        3. Assign targets to satellites minimizing total |delta_RAAN|.
+        4. For each satellite:
+           a. RAAN drift at reference altitude: omega_ref = dRaan/dt(a_ref)
+           b. RAAN drift at drift altitude:     omega_drift = dRaan/dt(a_drift)
+           c. Differential rate: d_omega = omega_drift - omega_ref   [rad/s]
+           d. Time to achieve delta_RAAN: T = delta_RAAN_rad / |d_omega|
+              If T > max_phasing_days * 86400: increase delta_a linearly.
+           e. Delta-V = Hohmann cost (ref -> drift -> ref) = 2 * _hohmann_dV
+        5. Annual maintenance: if all sats at same altitude, no maintenance.
+           If different altitudes, compute differential drift * year / v.
+    Failure Modes:
+        delta_a = 0 -> zero differential drift; function raises ValueError.
+        N = 0 or 1  -> returns trivial plan.
+    """
+    n = len(current_raan_deg)
+    if n == 0:
+        return RAANPhasingPlan(
+            n_planes=0, target_raan_deg=[], current_raan_deg=[],
+            delta_raan_deg=[], drift_altitude_delta_km=[], phasing_duration_days=[],
+            maneuver_deltaV_m_per_s=[], maintenance_deltaV_per_year_m_s=0.0,
+            raan_spacing_deg=0.0, sat_ids=[],
+        )
+    if n == 1:
+        return RAANPhasingPlan(
+            n_planes=1, target_raan_deg=[raan_ref_deg], current_raan_deg=list(current_raan_deg),
+            delta_raan_deg=[0.0], drift_altitude_delta_km=[0.0], phasing_duration_days=[0.0],
+            maneuver_deltaV_m_per_s=[0.0], maintenance_deltaV_per_year_m_s=0.0,
+            raan_spacing_deg=360.0, sat_ids=sat_ids or ["SAT-0"],
+        )
+
+    ids = sat_ids if sat_ids and len(sat_ids) == n else [f"SAT-{k}" for k in range(n)]
+
+    spacing_deg = 360.0 / n
+    # Desired targets (absolute RAAN values)
+    raw_targets = [raan_ref_deg + k * spacing_deg for k in range(n)]
+    # Assign targets to satellites using greedy minimum-delta matching
+    unassigned = list(range(n))
+    assigned_targets: List[float] = [0.0] * n
+    for sat_idx in range(n):
+        cur = current_raan_deg[sat_idx] % 360.0
+        best_j = min(unassigned, key=lambda j: abs(_raan_diff_deg(cur, raw_targets[j] % 360.0)))
+        assigned_targets[sat_idx] = raw_targets[best_j] % 360.0
+        unassigned.remove(best_j)
+
+    a_ref = elements_ref.semi_major_axis
+    e_ref = elements_ref.eccentricity
+    i_rad = math.radians(elements_ref.inclination_deg)
+
+    omega_ref = _raan_drift_rate_rad_s(a_ref, e_ref, i_rad)   # rad/s
+
+    target_list = []
+    delta_list = []
+    da_list = []
+    T_list = []
+    dv_list = []
+
+    for k in range(n):
+        cur_deg = current_raan_deg[k] % 360.0
+        tgt_deg = assigned_targets[k]
+        delta_deg = _raan_diff_deg(cur_deg, tgt_deg)   # signed [-180, 180]
+        delta_rad = math.radians(delta_deg)
+
+        # For prograde orbit omega_ref < 0 (westward drift).
+        # To drift faster westward: lower altitude (smaller a -> larger |omega|).
+        # To drift slower (drift eastward relative to ref): raise altitude.
+        # Sign convention: if delta_deg < 0 we need more westward drift -> lower.
+        #                  if delta_deg > 0 we need less westward drift -> raise.
+        direction = math.copysign(1.0, delta_rad)
+        da_sign = -direction if omega_ref < 0 else direction
+        da_km = da_sign * abs(drift_altitude_delta_km)
+        a_drift = a_ref + da_km
+
+        omega_drift = _raan_drift_rate_rad_s(a_drift, e_ref, i_rad)
+        d_omega = omega_drift - omega_ref   # rad/s differential rate
+
+        if abs(d_omega) < 1e-20:
+            # No meaningful differential drift; fall back to double delta_a
+            da_km = da_sign * abs(drift_altitude_delta_km) * 2.0
+            a_drift = a_ref + da_km
+            omega_drift = _raan_drift_rate_rad_s(a_drift, e_ref, i_rad)
+            d_omega = omega_drift - omega_ref
+
+        if abs(d_omega) < 1e-20:
+            raise ValueError("Zero differential RAAN drift; increase drift_altitude_delta_km.")
+
+        T_s = abs(delta_rad) / abs(d_omega)
+
+        # If phasing time exceeds cap, scale up delta_a proportionally
+        if T_s > max_phasing_days * 86400.0 and abs(delta_rad) > 1e-8:
+            T_s = max_phasing_days * 86400.0
+            needed_d_omega = abs(delta_rad) / T_s
+            # Solve for required da such that |d_omega| = needed_d_omega
+            # dRaan/da ~= (dRaan_ref / a) * (-3/2) for circular orbit approx
+            # Use finite difference around a_ref
+            da_step = 1.0  # km
+            dom_da = abs(_raan_drift_rate_rad_s(a_ref + da_step, e_ref, i_rad) - omega_ref) / da_step
+            if dom_da > 1e-25:
+                da_km = da_sign * needed_d_omega / dom_da
+                a_drift = a_ref + da_km
+
+        T_days = T_s / 86400.0
+        dv = 2.0 * _hohmann_deltaV_m_s(a_ref, a_drift)   # to drift orbit and back
+
+        target_list.append(tgt_deg)
+        delta_list.append(delta_deg)
+        da_list.append(da_km)
+        T_list.append(T_days)
+        dv_list.append(dv)
+
+    # Maintenance: all sats at same altitude -> same J2 rate -> no drift separation.
+    # Maintenance cost = 0 for homogeneous constellation.
+    maintenance_dv = 0.0
+
+    return RAANPhasingPlan(
+        n_planes=n,
+        target_raan_deg=target_list,
+        current_raan_deg=[r % 360.0 for r in current_raan_deg],
+        delta_raan_deg=delta_list,
+        drift_altitude_delta_km=da_list,
+        phasing_duration_days=T_list,
+        maneuver_deltaV_m_per_s=dv_list,
+        maintenance_deltaV_per_year_m_s=maintenance_dv,
+        raan_spacing_deg=spacing_deg,
+        sat_ids=ids,
+    )
+
+
+def _raan_diff_deg(current_deg: float, target_deg: float) -> float:
+    """
+    ID: CORE-037-H3
+    Purpose: Compute signed shortest-arc RAAN difference [deg] in [-180, 180].
+    """
+    diff = (target_deg - current_deg) % 360.0
+    if diff > 180.0:
+        diff -= 360.0
+    return diff
