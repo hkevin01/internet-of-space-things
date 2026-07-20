@@ -138,6 +138,7 @@ class MissionControl:
         use_horizon_mpc: bool = False,
         horizon_steps: int = 6,
         step_hours: float = 1.0,
+        power_budget_fraction: float = 1.0,
     ) -> Dict[str, Any]:
         """
         Produce a deterministic, risk-aware resource allocation plan.
@@ -148,6 +149,10 @@ class MissionControl:
         - demand_fraction: desired budget share in [0..1]
         - criticality: mission criticality in [0..1]
         - efficiency: optional >0 efficiency factor
+
+        power_budget_fraction: instantaneous power availability [0,1] from
+            compute_power_budget_fraction(). Pass this to scale the distributable
+            budget to reflect real eclipse/battery state.
         """
         states: List[SubsystemState] = []
         predictive_signals = predictive_signals or {}
@@ -169,6 +174,8 @@ class MissionControl:
                 )
             )
 
+        pbf = max(0.0, min(1.0, float(power_budget_fraction)))
+
         if use_horizon_mpc:
             plan = self.resource_allocator.recommend_horizon_allocation(
                 subsystem_states=states,
@@ -176,12 +183,14 @@ class MissionControl:
                 mission_phase=mission_phase,
                 horizon_steps=horizon_steps,
                 step_hours=step_hours,
+                power_budget_fraction=pbf,
             )
         else:
             plan = self.resource_allocator.recommend_allocation(
                 subsystem_states=states,
                 crew_risk=crew_risk,
                 mission_phase=mission_phase,
+                power_budget_fraction=pbf,
             )
 
         return {
@@ -189,6 +198,7 @@ class MissionControl:
             "reserve_fraction": plan.reserve_fraction,
             "risk_index": plan.risk_index,
             "mission_utility": plan.mission_utility,
+            "power_budget_fraction": plan.power_budget_fraction,
             "mission_phase": mission_phase,
             "mode": "horizon_mpc" if use_horizon_mpc else "single_step",
         }

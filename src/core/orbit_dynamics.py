@@ -40,7 +40,7 @@ import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -873,3 +873,405 @@ def compute_power_budget_fraction(
     # Combined power fraction (clamped to [0, 1])
     raw = solar_fraction + battery_contribution * (1.0 - solar_fraction)
     return max(0.0, min(1.0, raw))
+
+
+# ---------------------------------------------------------------------------
+# Radiation dose accumulation
+# ---------------------------------------------------------------------------
+
+# Simplified trapped-radiation environment parameters.
+# AE8-MAX model approximation for LEO electron flux.
+# Reference: Vette, J.I. "The AE-8 Trapped Electron Model Environment" NSSDC 91-24.
+_RAD_ALTITUDE_REF_KM: float = 400.0      # reference altitude for dose rate normalization
+_RAD_DOSE_RATE_REF_MRAD_PER_S: float = 2.8e-5  # ~1 mrad/s at 400 km ISS orbit
+_RAD_SCALE_HEIGHT_KM: float = 400.0      # exponential altitude scale height for trapped flux
+
+# South Atlantic Anomaly (SAA) geographic center and spread.
+_SAA_LAT_DEG: float = -28.0              # degrees latitude
+_SAA_LON_DEG: float = -45.0             # degrees longitude
+_SAA_SIGMA_LAT_DEG: float = 16.0
+_SAA_SIGMA_LON_DEG: float = 32.0
+_SAA_FLUX_ENHANCEMENT: float = 15.0     # peak dose rate multiplier inside SAA
+
+# Solar cell degradation constant: fractional efficiency loss per Mrad TID.
+# Typical space-grade GaAs triple-junction: ~1.5% per 100 krad = 15% per Mrad.
+_CELL_DEGRADATION_PER_MRAD: float = 1.5e-4   # fraction per mrad
+
+
+def _ecef_lat_lon(r_ecef: np.ndarray) -> Tuple[float, float]:
+    """
+    ID: CORE-031-H1
+    Purpose: Convert ECEF position to geographic latitude/longitude [deg].
+    Inputs: r_ecef - ECEF position [km].
+    Outputs: (latitude_deg, longitude_deg).
+    """
+    x, y, z = float(r_ecef[0]), float(r_ecef[1]), float(r_ecef[2])
+    lon_rad = math.atan2(y, x)
+    p = math.sqrt(x * x + y * y)
+    # Iterative geodetic latitude (Bowring's method, 3 iterations)
+    lat_rad = math.atan2(z, p * (1.0 - E2_EARTH))
+    for _ in range(3):
+        N = R_EARTH / math.sqrt(1.0 - E2_EARTH * math.sin(lat_rad) ** 2)
+        lat_rad = math.atan2(z + E2_EARTH * N * math.sin(lat_rad), p)
+    return math.degrees(lat_rad), math.degrees(lon_rad)
+
+
+def _saa_dose_enhancement(lat_deg: float, lon_deg: float) -> float:
+    """
+    ID: CORE-031-H2
+    Purpose: Gaussian SAA dose enhancement factor at geographic (lat, lon).
+    Outputs: dimensionless multiplier >= 1.0.
+    """
+    dlat = lat_deg - _SAA_LAT_DEG
+    dlon = lon_deg - _SAA_LON_DEG
+    # Wrap longitude difference to [-180, 180]
+    while dlon > 180.0:
+        dlon -= 360.0
+    while dlon < -180.0:
+        dlon += 360.0
+    exponent = (dlat / _SAA_SIGMA_LAT_DEG) ** 2 + (dlon / _SAA_SIGMA_LON_DEG) ** 2
+    enhancement = 1.0 + (_SAA_FLUX_ENHANCEMENT - 1.0) * math.exp(-0.5 * exponent)
+    return enhancement
+
+
+@dataclass
+class RadiationDoseState:
+    """
+    ID: CORE-031-DS1
+    Purpose: Accumulated radiation dose and derived degradation for one orbit.
+
+    Fields:
+        total_dose_mrad        - total ionizing dose over the integration interval [mrad]
+        saa_dose_mrad          - SAA-attributable component [mrad]
+        background_dose_mrad   - non-SAA background component [mrad]
+        panel_degradation_delta - fractional solar cell efficiency loss this interval
+        cumulative_panel_degradation - running cumulative fraction (0..1, caller must track)
+        n_saa_crossings        - number of SAA passes during interval
+    """
+    total_dose_mrad: float
+    saa_dose_mrad: float
+    background_dose_mrad: float
+    panel_degradation_delta: float
+    n_saa_crossings: int
+    integration_seconds: float
+
+
+def compute_radiation_dose(
+    elements: OrbitalElementsJ2,
+    start: datetime,
+    duration_seconds: float,
+    n_samples: int = 360,
+) -> RadiationDoseState:
+    """
+    ID: CORE-031-F1
+    Purpose: Integrate trapped-particle radiation dose over a given time
+             interval, accounting for altitude, SAA, and eclipse shielding.
+    Rationale: TID accumulates non-uniformly - SAA contributes ~60-80% of
+               total LEO dose despite covering <5% of orbit arc time.
+               Accurate dose drives panel_degradation fed to PM engine.
+    Inputs:
+        elements         - orbital elements at start epoch.
+        start            - UTC start of integration window.
+        duration_seconds - integration interval (typically one orbit period).
+        n_samples        - quadrature points.
+    Outputs: RadiationDoseState.
+    Algorithm:
+        Trapezoidal integration of dose_rate(t) * dt.
+        dose_rate = base_rate(h) * saa_factor(lat, lon) * eclipse_shielding
+        eclipse_shielding: electrons in eclipse still irradiate; 0.9 multiplier
+        applied in eclipse (Earth provides partial shielding of lower belt).
+    References: Stassinopoulos & Raymond, Proc. IEEE, 1988.
+                Barth et al., IEEE Trans. Nucl. Sci., 2003.
+    """
+    from datetime import timedelta
+
+    dt_step = duration_seconds / n_samples
+    total_dose = 0.0
+    saa_dose = 0.0
+    background_dose = 0.0
+    n_saa = 0
+    in_saa = False
+    SAA_THRESHOLD = 3.0   # enhancement factor above which we count as SAA crossing
+
+    for k in range(n_samples):
+        t = start + timedelta(seconds=k * dt_step)
+        state = propagate_j2(elements, t)
+        r_norm = float(np.linalg.norm(state.position))
+        alt_km = r_norm - R_EARTH
+
+        # Background dose rate: exponential with altitude
+        base_rate = _RAD_DOSE_RATE_REF_MRAD_PER_S * math.exp(
+            (alt_km - _RAD_ALTITUDE_REF_KM) / _RAD_SCALE_HEIGHT_KM
+        )
+
+        # Geographic position for SAA lookup
+        gast = _gast(t)
+        c_g, s_g = math.cos(gast), math.sin(gast)
+        # Rotate ECI to ECEF
+        r_ecef = np.array([
+            c_g * state.position[0] + s_g * state.position[1],
+            -s_g * state.position[0] + c_g * state.position[1],
+            state.position[2],
+        ])
+        lat_deg, lon_deg = _ecef_lat_lon(r_ecef)
+        saa_factor = _saa_dose_enhancement(lat_deg, lon_deg)
+
+        # Eclipse partial shielding: Earth's body blocks part of inner belt flux
+        eclipse_state = compute_eclipse_state(state)
+        eclipse_shield = 0.90 if eclipse_state.is_eclipse else 1.0
+
+        rate = base_rate * saa_factor * eclipse_shield
+        dose_step = rate * dt_step
+        total_dose += dose_step
+        saa_contrib = base_rate * (saa_factor - 1.0) * eclipse_shield * dt_step
+        saa_dose += saa_contrib
+        background_dose += base_rate * eclipse_shield * dt_step
+
+        # Count SAA crossings (leading edge only)
+        currently_in_saa = saa_factor >= SAA_THRESHOLD
+        if currently_in_saa and not in_saa:
+            n_saa += 1
+        in_saa = currently_in_saa
+
+    panel_delta = total_dose * _CELL_DEGRADATION_PER_MRAD
+    return RadiationDoseState(
+        total_dose_mrad=total_dose,
+        saa_dose_mrad=saa_dose,
+        background_dose_mrad=background_dose,
+        panel_degradation_delta=panel_delta,
+        n_saa_crossings=n_saa,
+        integration_seconds=duration_seconds,
+    )
+
+
+def panel_degradation_from_dose(cumulative_dose_mrad: float) -> float:
+    """
+    ID: CORE-031-F2
+    Purpose: Convert cumulative TID dose to fractional solar panel efficiency loss.
+    Inputs: cumulative_dose_mrad - total accumulated dose since beginning of mission.
+    Outputs: degradation fraction in [0, 1] (0 = new panels).
+    Rationale: GaAs triple-junction cells follow a power-law degradation model
+               with dose; for moderate doses (<10 Mrad) a linear approximation
+               is within 5% of Messenger/RBSP measured data.
+    """
+    return min(1.0, max(0.0, cumulative_dose_mrad * _CELL_DEGRADATION_PER_MRAD))
+
+
+# ---------------------------------------------------------------------------
+# Delta-V station-keeping budget
+# ---------------------------------------------------------------------------
+
+# Atmospheric drag model: US Standard Atmosphere 1976 approximate density.
+# rho(h) = rho0 * exp(-h / H) for altitude h above reference.
+_DRAG_RHO0_KG_M3: float = 1.225           # kg/m^3 at sea level
+_DRAG_SCALE_HEIGHT_KM: float = 8.5        # atmospheric scale height [km]
+_DRAG_SCALE_HEIGHT_UPPER: float = 60.0    # scale height above 86 km [km]
+
+
+def atmospheric_density_kg_m3(altitude_km: float) -> float:
+    """
+    ID: CORE-032-H1
+    Purpose: Exponential atmosphere density model for drag calculations.
+    Inputs: altitude_km - geodetic altitude above Earth surface [km].
+    Outputs: density [kg/m^3].
+    References: US Standard Atmosphere 1976.
+    """
+    if altitude_km < 86.0:
+        return _DRAG_RHO0_KG_M3 * math.exp(-altitude_km / _DRAG_SCALE_HEIGHT_KM)
+    else:
+        rho_86 = _DRAG_RHO0_KG_M3 * math.exp(-86.0 / _DRAG_SCALE_HEIGHT_KM)
+        return rho_86 * math.exp(-(altitude_km - 86.0) / _DRAG_SCALE_HEIGHT_UPPER)
+
+
+@dataclass
+class StationKeepingBudget:
+    """
+    ID: CORE-032-DS1
+    Purpose: Delta-V budget breakdown for orbital station-keeping over a
+             maintenance interval.
+
+    Fields:
+        drag_deltaV_m_per_s      - velocity impulse needed to counter atmospheric drag [m/s]
+        raan_correction_m_per_s  - out-of-plane delta-V to correct accumulated RAAN error [m/s]
+        total_deltaV_m_per_s     - total station-keeping delta-V [m/s]
+        propulsion_demand_fraction - normalized urgency of propulsion subsystem in [0, 1]
+        maintenance_interval_days  - period over which this budget applies
+    """
+    drag_deltaV_m_per_s: float
+    raan_correction_m_per_s: float
+    total_deltaV_m_per_s: float
+    propulsion_demand_fraction: float
+    maintenance_interval_days: float
+
+
+def compute_station_keeping_budget(
+    elements: OrbitalElementsJ2,
+    spacecraft_mass_kg: float = 12.0,
+    drag_area_m2: float = 0.06,
+    Cd: float = 2.2,
+    raan_tolerance_deg: float = 1.0,
+    maintenance_interval_days: float = 30.0,
+    max_budget_m_per_s: float = 50.0,
+) -> StationKeepingBudget:
+    """
+    ID: CORE-032-F1
+    Purpose: Compute the orbital station-keeping delta-V budget required to
+             maintain orbital altitude against drag and correct RAAN drift
+             within tolerance over a maintenance interval.
+    Rationale: Station-keeping drives propulsion allocation; the allocator
+               must reserve propulsion budget proportional to upcoming demand.
+    Inputs:
+        elements                 - current orbital elements.
+        spacecraft_mass_kg       - dry + propellant mass [kg].
+        drag_area_m2             - effective cross-sectional area for drag [m^2].
+        Cd                       - drag coefficient (2.2 typical for box sat).
+        raan_tolerance_deg       - allowed RAAN drift before correction maneuver [deg].
+        maintenance_interval_days - period for which budget is computed.
+        max_budget_m_per_s       - normalization ceiling for demand fraction.
+    Outputs: StationKeepingBudget.
+    Algorithm:
+        Drag delta-V:
+            a_drag = 0.5 * Cd * (A/m) * rho(h) * v^2   [m/s^2]
+            dV_drag = a_drag * interval_seconds
+
+        RAAN correction delta-V:
+            accumulated_RAAN = |d_raan/dt| * interval_seconds
+            If accumulated_RAAN > tolerance:
+                dV_raan ~ v_sat * sin(delta_raan/2)  (two-impulse plane change)
+                For small angles: dV_raan ~ v_sat * delta_raan / 2  [rad]
+            Else: 0 (within deadband; no correction needed yet)
+    References: Wertz, J.R. "Space Mission Engineering" 2011, Ch. 19.
+    """
+    a = elements.semi_major_axis
+    e = elements.eccentricity
+    i_rad = math.radians(elements.inclination_deg)
+    interval_s = maintenance_interval_days * 86400.0
+
+    # Orbital velocity at mean altitude (circular approximation)
+    v_circ_km_s = math.sqrt(MU_EARTH / a)
+    v_circ_m_s = v_circ_km_s * 1000.0
+    alt_km = a - R_EARTH
+
+    # Atmospheric drag deceleration at mean altitude [m/s^2]
+    rho = atmospheric_density_kg_m3(alt_km)
+    B = Cd * drag_area_m2 / spacecraft_mass_kg   # ballistic coefficient inverse [m^2/kg]
+    a_drag_m_s2 = 0.5 * B * rho * (v_circ_m_s ** 2)
+
+    dV_drag = a_drag_m_s2 * interval_s   # [m/s]
+
+    # RAAN correction (only if drift exceeds tolerance deadband)
+    d_raan_rad_s, _, _ = compute_j2_secular_rates(a, e, i_rad)
+    accumulated_raan_rad = abs(d_raan_rad_s) * interval_s
+    accumulated_raan_deg = math.degrees(accumulated_raan_rad)
+
+    if accumulated_raan_deg > raan_tolerance_deg:
+        # Out-of-plane correction: dV = 2 * v * sin(delta_i / 2)
+        # For RAAN correction via combined inclination change, cost is:
+        # (exact for circular orbit plane change)
+        excess_raan_rad = math.radians(accumulated_raan_deg - raan_tolerance_deg)
+        dV_raan = 2.0 * v_circ_m_s * math.sin(excess_raan_rad / 2.0)
+    else:
+        dV_raan = 0.0
+
+    total_dV = dV_drag + dV_raan
+    demand = min(1.0, total_dV / max(1e-3, max_budget_m_per_s))
+
+    return StationKeepingBudget(
+        drag_deltaV_m_per_s=dV_drag,
+        raan_correction_m_per_s=dV_raan,
+        total_deltaV_m_per_s=total_dV,
+        propulsion_demand_fraction=demand,
+        maintenance_interval_days=maintenance_interval_days,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Inter-satellite link (ISL) visibility
+# ---------------------------------------------------------------------------
+
+def check_isl_visibility(
+    r1_eci: np.ndarray,
+    r2_eci: np.ndarray,
+    atmosphere_margin_km: float = 100.0,
+) -> Tuple[bool, float]:
+    """
+    ID: CORE-033-F1
+    Purpose: Test whether two satellites have line-of-sight (no Earth occultation)
+             and return the range between them.
+    Rationale: ISL scheduling requires knowing which satellite pairs can communicate
+               at each time step; Earth blocks links at low viewing angles.
+    Inputs:
+        r1_eci, r2_eci      - ECI positions of the two satellites [km].
+        atmosphere_margin_km - minimum clearance above surface [km]
+                               (100 km includes ionosphere + nav margin).
+    Outputs: (visible: bool, range_km: float).
+    Algorithm:
+        Parametric ray: P(t) = r1 + t*(r2 - r1),  t in [0, 1].
+        Closest Earth-center approach at t* = -dot(r1, d) / dot(d, d)
+        where d = r2 - r1.
+        Minimum Earth clearance = |P(t*)| if t* in [0,1] else min(|r1|, |r2|).
+        Visible when clearance > R_EARTH + atmosphere_margin_km.
+    """
+    d = r2_eci - r1_eci
+    d_sq = float(np.dot(d, d))
+    range_km = float(math.sqrt(d_sq))
+
+    if d_sq < 1e-12:
+        return True, 0.0   # same position edge case
+
+    t_star = float(-np.dot(r1_eci, d)) / d_sq
+    t_clamp = max(0.0, min(1.0, t_star))
+    closest_pt = r1_eci + t_clamp * d
+    min_dist = float(np.linalg.norm(closest_pt))
+
+    clearance_km = R_EARTH + atmosphere_margin_km
+    visible = min_dist >= clearance_km
+    return visible, range_km
+
+
+def compute_isl_link_budget(
+    r1_eci: np.ndarray,
+    r2_eci: np.ndarray,
+    transmit_power_w: float = 2.0,
+    transmit_gain_dbi: float = 6.0,
+    receive_gain_dbi: float = 6.0,
+    carrier_freq_hz: float = 2.4e9,
+    required_snr_db: float = 10.0,
+    noise_temp_k: float = 290.0,
+    bandwidth_hz: float = 1.0e6,
+) -> Dict[str, float]:
+    """
+    ID: CORE-033-F2
+    Purpose: Compute ISL RF link budget (received power, path loss, SNR margin).
+    Inputs: transmit power [W], antenna gains [dBi], freq [Hz], geometry.
+    Outputs: dict with keys: range_km, path_loss_db, received_power_dbw,
+             noise_power_dbw, snr_db, link_margin_db.
+    References: Proakis "Digital Communications" link budget formulas.
+    """
+    visible, range_km = check_isl_visibility(r1_eci, r2_eci)
+    range_m = range_km * 1000.0
+
+    # Free-space path loss (Friis formula)
+    lam = C_LIGHT * 1000.0 / carrier_freq_hz   # wavelength [m]  (C_LIGHT in km/s -> *1000)
+    if range_m < 1.0:
+        range_m = 1.0
+    fspl_db = 20.0 * math.log10(4.0 * math.pi * range_m / lam)
+
+    Pt_dbw = 10.0 * math.log10(transmit_power_w)
+    Pr_dbw = Pt_dbw + transmit_gain_dbi + receive_gain_dbi - fspl_db
+
+    kB = 1.380649e-23   # Boltzmann constant
+    noise_power_dbw = 10.0 * math.log10(kB * noise_temp_k * bandwidth_hz)
+
+    snr_db = Pr_dbw - noise_power_dbw
+    link_margin_db = snr_db - required_snr_db
+
+    return {
+        "visible": float(visible),
+        "range_km": range_km,
+        "path_loss_db": fspl_db,
+        "received_power_dbw": Pr_dbw,
+        "noise_power_dbw": noise_power_dbw,
+        "snr_db": snr_db,
+        "link_margin_db": link_margin_db,
+    }

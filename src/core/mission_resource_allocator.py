@@ -34,6 +34,7 @@ class AllocationPlan:
     reserve_fraction: float
     risk_index: float
     mission_utility: float
+    power_budget_fraction: float = 1.0  # actual power fraction used (eclipse-aware)
 
 
 @dataclass(frozen=True)
@@ -163,6 +164,7 @@ class MissionResourceAllocator:
         mission_phase: str = "nominal",
         horizon_steps: int = 6,
         step_hours: float = 1.0,
+        power_budget_fraction: float = 1.0,
     ) -> AllocationPlan:
         """
         Horizon-aware model-predictive allocation over a short forecast window.
@@ -179,7 +181,7 @@ class MissionResourceAllocator:
         plans: List[AllocationPlan] = []
 
         for t in range(steps):
-            plan = self.recommend_allocation(simulated_states, simulated_risk, base_phase, persist=False)
+            plan = self.recommend_allocation(simulated_states, simulated_risk, base_phase, persist=False, power_budget_fraction=power_budget_fraction)
             plans.append(plan)
 
             updated: List[SubsystemState] = []
@@ -222,6 +224,7 @@ class MissionResourceAllocator:
             reserve_fraction=reserve,
             risk_index=risk_index,
             mission_utility=utility,
+            power_budget_fraction=power_budget_fraction,
         )
         self._persist_plan(final_plan, base_phase, mode="horizon_mpc")
         return final_plan
@@ -232,6 +235,7 @@ class MissionResourceAllocator:
         crew_risk: float,
         mission_phase: str = "nominal",
         persist: bool = True,
+        power_budget_fraction: float = 1.0,
     ) -> AllocationPlan:
         """
         Compute resource fractions for each subsystem plus reserve.
@@ -240,6 +244,10 @@ class MissionResourceAllocator:
         - subsystem_states: subsystem demand, health, and criticality states
         - crew_risk: normalized mission risk in [0..1]
         - mission_phase: nominal, transit, or emergency
+        - power_budget_fraction: instantaneous power availability in [0,1];
+          1.0 = full nominal power; <1 during eclipse or battery-constrained ops.
+          The distributable budget is scaled by this factor so allocations
+          reflect real energy availability rather than a static assumption.
         """
         if not subsystem_states:
             return AllocationPlan(allocations={}, reserve_fraction=1.0, risk_index=0.0, mission_utility=0.0)
@@ -256,7 +264,13 @@ class MissionResourceAllocator:
         max_reserve_for_safety = max(0.0, 1.0 - floor_sum - 0.01)
         reserve_fraction = min(reserve_candidate, max_reserve_for_safety)
         reserve_fraction = self._clamp(reserve_fraction, 0.0, 0.35)
-        distributable = max(0.0, 1.0 - reserve_fraction)
+        # Scale distributable budget by instantaneous power availability.
+        # Safety floors are expressed as fractions of the *nominal* budget so
+        # that critical systems always receive their minimum even when total
+        # power is reduced - the floor is taken from the power_budget_fraction
+        # before scaling extras, preserving physical safety guarantees.
+        pbf = self._clamp(float(power_budget_fraction), 0.0, 1.0)
+        distributable = max(0.0, (1.0 - reserve_fraction) * pbf)
 
         # Multi-factor urgency score per subsystem:
         # urgency = 0.45*criticality + 0.25*degradation + 0.20*demand_pressure + 0.10*phase_boost
@@ -346,6 +360,7 @@ class MissionResourceAllocator:
             reserve_fraction=reserve_fraction,
             risk_index=risk,
             mission_utility=mission_utility,
+            power_budget_fraction=pbf,
         )
         if persist:
             self._persist_plan(plan, phase, mode="single_step")
