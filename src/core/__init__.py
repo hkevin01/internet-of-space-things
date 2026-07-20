@@ -8,7 +8,12 @@ __author__ = "Internet of Space Things Team"
 __license__ = "MIT"
 
 from .mission_control import MissionControl
-from .mission_resource_allocator import AllocationPlan, MissionResourceAllocator, SubsystemState
+from .mission_resource_allocator import (
+    AllocationPlan,
+    MissionResourceAllocator,
+    PhaseTraceSample,
+    SubsystemState,
+)
 from .satellite_manager import SatelliteManager
 from .space_network import SpaceNetwork
 
@@ -19,4 +24,5 @@ __all__ = [
     "MissionResourceAllocator",
     "SubsystemState",
     "AllocationPlan",
+    "PhaseTraceSample",
 ]

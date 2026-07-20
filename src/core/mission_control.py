@@ -14,7 +14,11 @@ from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from .satellite_manager import Satellite, SatelliteManager, SatelliteStatus
-from .mission_resource_allocator import MissionResourceAllocator, SubsystemState
+from .mission_resource_allocator import (
+    MissionResourceAllocator,
+    PhaseTraceSample,
+    SubsystemState,
+)
 from .space_network import CommunicationMode, NetworkNode, SpaceNetwork
 
 logger = logging.getLogger(__name__)
@@ -89,7 +93,8 @@ class MissionControl:
     
     def __init__(self, mission_name: str = "IoST-Mission", 
                  network: Optional[SpaceNetwork] = None,
-                 satellite_manager: Optional[SatelliteManager] = None):
+                 satellite_manager: Optional[SatelliteManager] = None,
+                 metrics_sink: Optional[Any] = None):
         self.mission_name = mission_name
         self.network = network or SpaceNetwork()
         self.satellite_manager = satellite_manager or SatelliteManager()
@@ -120,7 +125,7 @@ class MissionControl:
         # Callbacks for external systems
         self.alert_callbacks: List[Callable] = []
         self.telemetry_callbacks: List[Callable] = []
-        self.resource_allocator = MissionResourceAllocator()
+        self.resource_allocator = MissionResourceAllocator(metrics_sink=metrics_sink)
         
         logger.info(f"Mission Control '{mission_name}' initialized")
 
@@ -129,6 +134,10 @@ class MissionControl:
         subsystem_metrics: List[Dict[str, Any]],
         crew_risk: float,
         mission_phase: str = "nominal",
+        predictive_signals: Optional[Dict[str, Dict[str, float]]] = None,
+        use_horizon_mpc: bool = False,
+        horizon_steps: int = 6,
+        step_hours: float = 1.0,
     ) -> Dict[str, Any]:
         """
         Produce a deterministic, risk-aware resource allocation plan.
@@ -141,29 +150,62 @@ class MissionControl:
         - efficiency: optional >0 efficiency factor
         """
         states: List[SubsystemState] = []
+        predictive_signals = predictive_signals or {}
         for item in subsystem_metrics:
+            name = str(item.get("name", "unknown"))
+            signal = predictive_signals.get(name, {})
             states.append(
                 SubsystemState(
-                    name=str(item.get("name", "unknown")),
+                    name=name,
                     health_score=float(item.get("health_score", 1.0)),
                     demand_fraction=float(item.get("demand_fraction", 0.0)),
                     criticality=float(item.get("criticality", 0.5)),
                     efficiency=float(item.get("efficiency", 1.0)),
+                    degradation_rate=float(signal.get("degradation_rate", item.get("degradation_rate", 0.0))),
+                    anomaly_lead_time_hours=signal.get(
+                        "anomaly_lead_time_hours",
+                        item.get("anomaly_lead_time_hours"),
+                    ),
                 )
             )
 
-        plan = self.resource_allocator.recommend_allocation(
-            subsystem_states=states,
-            crew_risk=crew_risk,
-            mission_phase=mission_phase,
-        )
+        if use_horizon_mpc:
+            plan = self.resource_allocator.recommend_horizon_allocation(
+                subsystem_states=states,
+                crew_risk=crew_risk,
+                mission_phase=mission_phase,
+                horizon_steps=horizon_steps,
+                step_hours=step_hours,
+            )
+        else:
+            plan = self.resource_allocator.recommend_allocation(
+                subsystem_states=states,
+                crew_risk=crew_risk,
+                mission_phase=mission_phase,
+            )
+
         return {
             "allocations": plan.allocations,
             "reserve_fraction": plan.reserve_fraction,
             "risk_index": plan.risk_index,
             "mission_utility": plan.mission_utility,
             "mission_phase": mission_phase,
+            "mode": "horizon_mpc" if use_horizon_mpc else "single_step",
         }
+
+    def learn_phase_penalty_matrices(self, trace_samples: List[Dict[str, Any]]) -> Dict[str, Dict[str, float]]:
+        """Learn mission-phase penalty matrices from simulation traces."""
+        parsed: List[PhaseTraceSample] = []
+        for sample in trace_samples:
+            parsed.append(
+                PhaseTraceSample(
+                    mission_phase=str(sample.get("mission_phase", "nominal")),
+                    allocations=dict(sample.get("allocations", {})),
+                    crew_risk=float(sample.get("crew_risk", 0.0)),
+                    mission_utility=float(sample.get("mission_utility", 0.0)),
+                )
+            )
+        return self.resource_allocator.learn_phase_penalty_matrices(parsed)
     
     async def start_mission(self, duration: Optional[timedelta] = None) -> bool:
         """Start the mission operations"""

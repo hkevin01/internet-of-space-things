@@ -7,6 +7,7 @@ Generated lockfiles:
 - requirements/locks/ml.lock
 - requirements/locks/full-stack.lock
 - requirements/locks/core-py311.lock
+- requirements/locks/ml-py311.lock
 - requirements/locks/full-stack-py311.lock
 
 Lane policy:
