@@ -14,15 +14,44 @@ from .mission_resource_allocator import (
     PhaseTraceSample,
     SubsystemState,
 )
+from .orbit_dynamics import (
+    ContactWindow,
+    EciState,
+    EclipseState,
+    EclipseType,
+    GroundStation,
+    OrbitalElementsJ2,
+    compute_eclipse_state,
+    compute_j2_secular_rates,
+    compute_power_budget_fraction,
+    find_contact_windows,
+    orbit_eclipse_fraction,
+    propagate_j2,
+    solar_panel_power_fraction,
+)
 from .satellite_manager import SatelliteManager
 from .space_network import SpaceNetwork
 
 __all__ = [
     "SpaceNetwork",
-    "SatelliteManager", 
+    "SatelliteManager",
     "MissionControl",
     "MissionResourceAllocator",
     "SubsystemState",
     "AllocationPlan",
     "PhaseTraceSample",
+    # orbit dynamics
+    "OrbitalElementsJ2",
+    "EciState",
+    "EclipseState",
+    "EclipseType",
+    "GroundStation",
+    "ContactWindow",
+    "propagate_j2",
+    "compute_eclipse_state",
+    "compute_j2_secular_rates",
+    "solar_panel_power_fraction",
+    "orbit_eclipse_fraction",
+    "find_contact_windows",
+    "compute_power_budget_fraction",
 ]
